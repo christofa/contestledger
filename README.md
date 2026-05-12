@@ -1,21 +1,46 @@
-# Next.js template
+# ContestLedger — Setup Guide
 
-This is a Next.js template with shadcn/ui.
+## What's inside
 
-## Adding components
+```
+contestledger/
+├── app/
+│   ├── globals.css          ← All styles + CSS variables
+│   ├── layout.tsx           ← Root layout (wraps every page with Navbar + Footer)
+│   ├── page.tsx             ← Landing page (Hero, stats, How it Works, CTA)
+│   ├── browse/
+│   │   └── page.tsx         ← Browse Contests page (filters, search, grid)
+│   ├── create/
+│   │   └── page.tsx         ← Create Contest form (with live preview)
+│   ├── contest/
+│   │   └── [id]/page.tsx    ← Contest detail (entries, voting, leaderboard, treasury)
+│   ├── submit/
+│   │   └── [id]/page.tsx    ← Submit entry (file upload + caption)
+│   └── profile/
+│       └── page.tsx         ← Profile (My Entries, Rewards, Certificates, My Contests tabs)
+├── components/
+│   ├── Navbar.tsx           ← Sticky top navbar
+│   ├── Footer.tsx           ← Footer
+│   └── ContestCard.tsx      ← Reusable contest card (used across pages)
+├── lib/
+│   ├── data.ts              ← All mock data + TypeScript types
+│   └── utils.ts             ← cn() helper for Tailwind class merging
+├── package.json
+├── tailwind.config.ts
+├── tsconfig.json
+├── next.config.js
+└── postcss.config.js
+```
 
-To add components to your app, run the following command:
+---
+
+## Step-by-step setup
+
+### 1. Create a new Next.js project
+
+Open your terminal in VSCode and run:
 
 ```bash
-npx shadcn@latest add button
+bun create next-app contestledger
 ```
 
-This will place the ui components in the `components` directory.
-
-## Using components
-
-To use the components in your app, import them as follows:
-
-```tsx
-import { Button } from "@/components/ui/button";
-```
