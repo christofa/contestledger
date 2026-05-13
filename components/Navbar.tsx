@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 const navLinks = [
   { href: "/browse", label: "Browse" },
   { href: "/create", label: "Create" },
-  { href: "/profile", label: "Profile" },
+  { href: "/auth", label: "Profile" }, // redirects to login before showing profile
 ];
 
 export default function Navbar() {
