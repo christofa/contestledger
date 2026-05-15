@@ -172,6 +172,19 @@ export default function AuthPage() {
             ))}
           </div>
 
+           {/* Wallet connect button */}
+          <button className="w-full flex items-center justify-center gap-3 border border-border bg-surface hover:border-border-bright hover:bg-surface-2 text-text font-display font-medium py-3 rounded-xl transition-all duration-200 text-sm">
+            <Wallet className="w-4 h-4 text-accent" />
+            Connect CKB Wallet
+          </button>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 my-6">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-muted font-mono">or continue with</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
           {/* Form */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {/* Username — signup only */}
@@ -307,19 +320,6 @@ export default function AuthPage() {
               )}
             </button>
           </form>
-
-          {/* Divider */}
-          <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-xs text-muted font-mono">or continue with</span>
-            <div className="flex-1 h-px bg-border" />
-          </div>
-
-          {/* Wallet connect button */}
-          <button className="w-full flex items-center justify-center gap-3 border border-border bg-surface hover:border-border-bright hover:bg-surface-2 text-text font-display font-medium py-3 rounded-xl transition-all duration-200 text-sm">
-            <Wallet className="w-4 h-4 text-accent" />
-            Connect CKB Wallet
-          </button>
 
           {/* Switch mode link */}
           <p className="text-center text-sm text-muted font-body mt-8">
