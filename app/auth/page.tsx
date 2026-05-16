@@ -1,49 +1,110 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Zap, Eye, EyeOff, Lock, Mail, User, ArrowRight, Shield, Trophy, Wallet } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import {
+  Zap,
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  User,
+  ArrowRight,
+  Shield,
+  Trophy,
+  Wallet,
+} from "lucide-react"
+import { cn } from "@/lib/utils"
+import { authClient } from "@/lib/auth-client"
 
-type Mode = "login" | "signup";
+type Mode = "login" | "signup"
 
 const trustPoints = [
-  { icon: <Shield className="w-4 h-4 text-accent" />, text: "Rewards secured in escrow" },
-  { icon: <Trophy className="w-4 h-4 text-warning" />, text: "Wins proven forever on-chain" },
-  { icon: <Zap className="w-4 h-4 text-primary" />, text: "Instant Fiber Network voting" },
-];
+  {
+    icon: <Shield className="h-4 w-4 text-accent" />,
+    text: "Rewards secured in escrow",
+  },
+  {
+    icon: <Trophy className="h-4 w-4 text-warning" />,
+    text: "Wins proven forever on-chain",
+  },
+  {
+    icon: <Zap className="h-4 w-4 text-primary" />,
+    text: "Instant Fiber Network voting",
+  },
+]
 
 export default function AuthPage() {
-  const router = useRouter();
-  const [mode, setMode] = useState<Mode>("login");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const router = useRouter()
+  const [mode, setMode] = useState<Mode>("login")
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
-  // Form fields
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    // Simulate auth — replace this with real CKB wallet auth later
-    setTimeout(() => {
-      setLoading(false);
-      router.push("/profile");
-    }, 1200);
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError("")
+
+    try {
+      if (mode === "login") {
+        const { error } = await authClient.signIn.email({
+          email,
+          password,
+        })
+
+        if (error) {
+          throw new Error(error.message || "Sign in failed")
+        }
+
+        router.push("/profile")
+        return
+      }
+
+      const { error } = await authClient.signUp.email({
+        email,
+        password,
+        name: username,
+      })
+
+      if (error) {
+        throw new Error(error.message || "Sign up failed")
+      }
+
+      router.push("/profile")
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Authentication failed"
+      setError(message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleWalletConnect() {
+    setLoading(true)
+    setError("")
+
+    try {
+      // Add your wallet auth flow here later
+      router.push("/profile")
+    } catch {
+      setError("Wallet connection failed")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-background flex relative overflow-hidden">
-      {/* ── Background effects ── */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Top-left glow */}
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
-        {/* Bottom-right glow */}
-        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
-        {/* Grid pattern */}
+    <div className="relative flex min-h-screen overflow-hidden bg-background">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
+        <div className="absolute -right-40 -bottom-40 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
         <div
           className="absolute inset-0 opacity-[0.03]"
           style={{
@@ -54,24 +115,23 @@ export default function AuthPage() {
         />
       </div>
 
-      {/* ── LEFT PANEL (decorative — hidden on mobile) ── */}
-      <div className="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-14 border-r border-border">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-display font-bold text-xl">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
-            <Zap className="w-5 h-5 text-white" />
+      <div className="relative hidden flex-col justify-between border-r border-border p-14 lg:flex lg:w-1/2">
+        <Link
+          href="/"
+          className="flex items-center gap-2 font-display text-xl font-bold"
+        >
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/30">
+            <Zap className="h-5 w-5 text-white" />
           </div>
           <span className="gradient-text">ContestLedger</span>
         </Link>
 
-        {/* Centre content */}
         <div className="flex flex-col gap-8">
-          {/* Big headline */}
           <div>
-            <p className="text-xs font-mono text-accent uppercase tracking-widest mb-4">
+            <p className="mb-4 font-mono text-xs tracking-widest text-accent uppercase">
               The on-chain contest platform
             </p>
-            <h2 className="font-display font-bold text-4xl xl:text-5xl text-text leading-tight">
+            <h2 className="font-display text-4xl leading-tight font-bold text-text xl:text-5xl">
               Compete. Win.
               <br />
               <span className="gradient-text">Get paid.</span>
@@ -80,7 +140,6 @@ export default function AuthPage() {
             </h2>
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             {[
               { val: "1,284", label: "Contests" },
@@ -89,79 +148,93 @@ export default function AuthPage() {
             ].map((stat) => (
               <div
                 key={stat.label}
-                className="bg-surface border border-border rounded-2xl p-4 text-center"
+                className="rounded-2xl border border-border bg-surface p-4 text-center"
               >
-                <p className="font-display font-bold text-xl gradient-text">{stat.val}</p>
-                <p className="text-xs text-muted font-mono mt-0.5">{stat.label}</p>
+                <p className="gradient-text font-display text-xl font-bold">
+                  {stat.val}
+                </p>
+                <p className="mt-0.5 font-mono text-xs text-muted">
+                  {stat.label}
+                </p>
               </div>
             ))}
           </div>
 
-          {/* Trust points */}
           <div className="flex flex-col gap-3">
             {trustPoints.map((point, i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-surface border border-border flex items-center justify-center flex-shrink-0">
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-border bg-surface">
                   {point.icon}
                 </div>
-                <span className="text-sm text-text-2 font-body">{point.text}</span>
+                <span className="font-body text-sm text-text-2">
+                  {point.text}
+                </span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Bottom quote */}
-        <div className="bg-surface border border-border rounded-2xl p-5">
-          <p className="text-sm text-text-2 font-body italic leading-relaxed">
-            "I submitted a skate reel and won 5,000 CKB. The payout hit my wallet
-            the second voting closed. Zero waiting, zero middlemen."
+        <div className="rounded-2xl border border-border bg-surface p-5">
+          <p className="font-body text-sm leading-relaxed text-text-2 italic">
+            "I submitted a skate reel and won 5,000 CKB. The payout hit my
+            wallet the second voting closed. Zero waiting, zero middlemen."
           </p>
-          <div className="flex items-center gap-2 mt-3">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+          <div className="mt-3 flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent">
               <span className="text-xs font-bold text-white">K</span>
             </div>
             <div>
-              <p className="text-xs font-display font-semibold text-text">@kira</p>
-              <p className="text-[10px] text-muted font-mono">3x Contest Winner</p>
+              <p className="font-display text-xs font-semibold text-text">
+                @kira
+              </p>
+              <p className="font-mono text-[10px] text-muted">
+                3x Contest Winner
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── RIGHT PANEL: Auth form ── */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 sm:px-12 py-16 relative">
-        {/* Mobile logo */}
+      <div className="relative flex w-full flex-col items-center justify-center px-6 py-16 sm:px-12 lg:w-1/2">
         <Link
           href="/"
-          className="flex items-center gap-2 font-display font-bold text-lg mb-10 lg:hidden"
+          className="mb-10 flex items-center gap-2 font-display text-lg font-bold lg:hidden"
         >
-          <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
-            <Zap className="w-4 h-4 text-white" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary">
+            <Zap className="h-4 w-4 text-white" />
           </div>
           <span className="gradient-text">ContestLedger</span>
         </Link>
 
         <div className="w-full max-w-md">
-          {/* Header */}
           <div className="mb-8">
-            <h1 className="font-display font-bold text-3xl text-text">
+            <h1 className="font-display text-3xl font-bold text-text">
               {mode === "login" ? "Welcome back" : "Create your account"}
             </h1>
-            <p className="text-muted font-body mt-2 text-sm">
+            <p className="mt-2 font-body text-sm text-muted">
               {mode === "login"
                 ? "Sign in to access your profile, contests, and rewards."
                 : "Join the on-chain contest platform. No gas fees to sign up."}
             </p>
           </div>
 
-          {/* Mode toggle */}
-          <div className="flex items-center bg-surface border border-border rounded-xl p-1 mb-8">
+          {error && (
+            <div className="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-center text-sm text-red-500">
+              {error}
+            </div>
+          )}
+
+          <div className="mb-8 flex items-center rounded-xl border border-border bg-surface p-1">
             {(["login", "signup"] as Mode[]).map((m) => (
               <button
                 key={m}
-                onClick={() => setMode(m)}
+                type="button"
+                onClick={() => {
+                  setMode(m)
+                  setError("")
+                }}
                 className={cn(
-                  "flex-1 py-2.5 rounded-lg font-display font-medium text-sm transition-all duration-200",
+                  "flex-1 rounded-lg py-2.5 font-display text-sm font-medium transition-all duration-200",
                   mode === m
                     ? "bg-primary text-white shadow-lg shadow-primary/20"
                     : "text-muted hover:text-text"
@@ -172,48 +245,50 @@ export default function AuthPage() {
             ))}
           </div>
 
-           {/* Wallet connect button */}
-          <button className="w-full flex items-center justify-center gap-3 border border-border bg-surface hover:border-border-bright hover:bg-surface-2 text-text font-display font-medium py-3 rounded-xl transition-all duration-200 text-sm">
-            <Wallet className="w-4 h-4 text-accent" />
+          <button
+            type="button"
+            onClick={handleWalletConnect}
+            disabled={loading}
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-surface py-3 font-display text-sm font-medium text-text transition-all duration-200 hover:border-border-bright hover:bg-surface-2 disabled:opacity-50"
+          >
+            <Wallet className="h-4 w-4 text-accent" />
             Connect CKB Wallet
           </button>
 
-          {/* Divider */}
-          <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-xs text-muted font-mono">or continue with</span>
-            <div className="flex-1 h-px bg-border" />
+          <div className="my-6 flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="font-mono text-xs text-muted">
+              or continue with
+            </span>
+            <div className="h-px flex-1 bg-border" />
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {/* Username — signup only */}
             {mode === "signup" && (
               <div>
-                <label className="block text-xs font-display font-medium text-text-2 uppercase tracking-wider mb-2">
+                <label className="mb-2 block font-display text-xs font-medium tracking-wider text-text-2 uppercase">
                   Username
                 </label>
                 <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                  <User className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted" />
                   <input
                     type="text"
                     placeholder="@your_handle"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    required={mode === "signup"}
+                    required
                     className="input pl-11"
                   />
                 </div>
               </div>
             )}
 
-            {/* Email */}
             <div>
-              <label className="block text-xs font-display font-medium text-text-2 uppercase tracking-wider mb-2">
+              <label className="mb-2 block font-display text-xs font-medium tracking-wider text-text-2 uppercase">
                 Email address
               </label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                <Mail className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted" />
                 <input
                   type="email"
                   placeholder="you@example.com"
@@ -225,49 +300,51 @@ export default function AuthPage() {
               </div>
             </div>
 
-            {/* Password */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-xs font-display font-medium text-text-2 uppercase tracking-wider">
+              <div className="mb-2 flex items-center justify-between">
+                <label className="block font-display text-xs font-medium tracking-wider text-text-2 uppercase">
                   Password
                 </label>
                 {mode === "login" && (
                   <button
                     type="button"
-                    className="text-xs text-primary hover:underline font-body"
+                    className="font-body text-xs text-primary hover:underline"
                   >
                     Forgot password?
                   </button>
                 )}
               </div>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                <Lock className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted" />
                 <input
                   type={showPassword ? "text" : "password"}
-                  placeholder={mode === "signup" ? "Min. 8 characters" : "Enter your password"}
+                  placeholder={
+                    mode === "signup"
+                      ? "Min. 8 characters"
+                      : "Enter your password"
+                  }
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={mode === "signup" ? 8 : undefined}
-                  className="input pl-11 pr-11"
+                  className="input pr-11 pl-11"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-text transition-colors"
+                  onClick={() => setShowPassword((value) => !value)}
+                  className="absolute top-1/2 right-4 -translate-y-1/2 text-muted transition-colors hover:text-text"
                 >
                   {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
+                    <EyeOff className="h-4 w-4" />
                   ) : (
-                    <Eye className="w-4 h-4" />
+                    <Eye className="h-4 w-4" />
                   )}
                 </button>
               </div>
             </div>
 
-            {/* Terms — signup only */}
             {mode === "signup" && (
-              <p className="text-xs text-muted font-body leading-relaxed">
+              <p className="font-body text-xs leading-relaxed text-muted">
                 By signing up, you agree to our{" "}
                 <a href="#" className="text-primary hover:underline">
                   Terms of Service
@@ -280,19 +357,18 @@ export default function AuthPage() {
               </p>
             )}
 
-            {/* Submit button */}
             <button
               type="submit"
               disabled={loading}
               className={cn(
-                "btn-primary w-full justify-center py-3 text-base mt-2 transition-all",
-                loading && "opacity-70 cursor-not-allowed"
+                "btn-primary mt-2 w-full justify-center py-3 text-base transition-all",
+                loading && "cursor-not-allowed opacity-70"
               )}
             >
               {loading ? (
                 <>
                   <svg
-                    className="animate-spin w-4 h-4"
+                    className="h-4 w-4 animate-spin"
                     fill="none"
                     viewBox="0 0 24 24"
                   >
@@ -307,7 +383,7 @@ export default function AuthPage() {
                     <path
                       className="opacity-75"
                       fill="currentColor"
-                      d="M4 12a8 8 0 018-8v8H4z"
+                      d="M4 12a8 8 0 0 1 8-8v8H4z"
                     />
                   </svg>
                   {mode === "login" ? "Signing in..." : "Creating account..."}
@@ -315,20 +391,23 @@ export default function AuthPage() {
               ) : (
                 <>
                   {mode === "login" ? "Sign In" : "Create Account"}
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="h-4 w-4" />
                 </>
               )}
             </button>
           </form>
 
-          {/* Switch mode link */}
-          <p className="text-center text-sm text-muted font-body mt-8">
+          <p className="mt-8 text-center font-body text-sm text-muted">
             {mode === "login" ? (
               <>
                 Don't have an account?{" "}
                 <button
-                  onClick={() => setMode("signup")}
-                  className="text-primary font-medium hover:underline"
+                  type="button"
+                  onClick={() => {
+                    setMode("signup")
+                    setError("")
+                  }}
+                  className="font-medium text-primary hover:underline"
                 >
                   Sign up free
                 </button>
@@ -337,8 +416,12 @@ export default function AuthPage() {
               <>
                 Already have an account?{" "}
                 <button
-                  onClick={() => setMode("login")}
-                  className="text-primary font-medium hover:underline"
+                  type="button"
+                  onClick={() => {
+                    setMode("login")
+                    setError("")
+                  }}
+                  className="font-medium text-primary hover:underline"
                 >
                   Sign in
                 </button>
@@ -348,5 +431,5 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }
