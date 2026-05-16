@@ -45,7 +45,7 @@ export default function Navbar() {
       await authClient.signOut();
       setProfileMenuOpen(false);
       setMobileOpen(false);
-      router.push("/auth");
+      router.replace("/auth");
       router.refresh();
     } finally {
       setLoggingOut(false);
