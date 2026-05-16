@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Edit, ExternalLink, Share2, Trophy } from "lucide-react";
+import { useRouter } from "next/navigation";
 import ContestCard from "@/components/ContestCard";
 import {
   MOCK_CERTIFICATES,
@@ -9,6 +10,7 @@ import {
   MOCK_ENTRIES,
   MOCK_REWARDS,
 } from "@/lib/data";
+import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
 type Tab = "My Entries" | "Rewards" | "Certificates" | "My Contests";
@@ -23,7 +25,16 @@ const profileStats = [
 ];
 
 export function ProfilePageClient() {
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>("My Entries");
+  const { data: session, isPending } = authClient.useSession();
+
+  useEffect(() => {
+    if (!isPending && !session) {
+      router.replace("/auth");
+      router.refresh();
+    }
+  }, [isPending, router, session]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">

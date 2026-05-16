@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
@@ -45,6 +45,13 @@ export default function AuthPage() {
   const [email, setEmail] = useState("")
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
+  const { data: session, isPending } = authClient.useSession()
+
+  useEffect(() => {
+    if (!isPending && session) {
+      router.replace("/profile")
+    }
+  }, [isPending, router, session])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

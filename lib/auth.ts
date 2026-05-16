@@ -7,6 +7,9 @@ const sqliteDb = new Database("auth.db");
 
 export const auth = betterAuth({
   database: sqliteDb,
+  session: {
+    expiresIn: 60 * 60 * 24 * 7,
+  },
   emailAndPassword: {
     enabled: true,
     autoSignIn: true, // Auto sign in after signup
