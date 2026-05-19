@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Menu, UserCircle2, X, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { ccc } from "@ckb-ccc/connector-react";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +21,27 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [walletAddress, setWalletAddress] = useState("");
   const { data: session, isPending } = authClient.useSession();
+  const signer = ccc.useSigner();
+
+  useEffect(() => {
+    async function loadWalletAddress() {
+      if (!signer) {
+        setWalletAddress("");
+        return;
+      }
+
+      try {
+        const address = await signer.getRecommendedAddress();
+        setWalletAddress(address);
+      } catch {
+        setWalletAddress("");
+      }
+    }
+
+    void loadWalletAddress();
+  }, [signer]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -83,10 +104,14 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-sm">
-            <div className="h-2 w-2 rounded-full bg-accent" />
-            <span className="font-mono text-xs text-muted">ckb1qzda...f91</span>
-          </div>
+          {walletAddress && (
+            <div className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-sm">
+              <div className="h-2 w-2 rounded-full bg-accent" />
+              <span className="font-mono text-xs text-muted">
+                {walletAddress.slice(0, 10)}...{walletAddress.slice(-4)}
+              </span>
+            </div>
+          )}
           <Link href="/create" className="btn-primary text-sm">
             <Zap className="h-4 w-4" />
             Create Contest

@@ -15,6 +15,7 @@ import {
   Trophy,
   Wallet,
 } from "lucide-react"
+import { ccc } from "@ckb-ccc/connector-react"
 import { cn } from "@/lib/utils"
 import { authClient } from "@/lib/auth-client"
 
@@ -46,12 +47,20 @@ export default function AuthPage() {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const { data: session, isPending } = authClient.useSession()
+  const { open, isOpen, signerInfo, wallet } = ccc.useCcc()
+  const signer = ccc.useSigner()
 
   useEffect(() => {
     if (!isPending && session) {
       router.replace("/profile")
     }
   }, [isPending, router, session])
+
+  useEffect(() => {
+    if (signer) {
+      router.replace("/profile")
+    }
+  }, [router, signer])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -98,10 +107,13 @@ export default function AuthPage() {
     setError("")
 
     try {
-      // Add your wallet auth flow here later
-      router.push("/profile")
-    } catch {
-      setError("Wallet connection failed")
+      if (!signer) {
+        await open()
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Wallet connection failed"
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -255,12 +267,21 @@ export default function AuthPage() {
           <button
             type="button"
             onClick={handleWalletConnect}
-            disabled={loading}
+            disabled={loading || isOpen}
             className="flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-surface py-3 font-display text-sm font-medium text-text transition-all duration-200 hover:border-border-bright hover:bg-surface-2 disabled:opacity-50"
           >
             <Wallet className="h-4 w-4 text-accent" />
-            Connect CKB Wallet
+            {loading || isOpen
+              ? "Opening wallet..."
+              : signer
+                ? `Connected: ${wallet?.name ?? "CKB Wallet"}`
+                : "Connect CKB Wallet"}
           </button>
+          {signerInfo && (
+            <p className="mt-3 text-center font-mono text-xs text-accent">
+              Wallet connected successfully
+            </p>
+          )}
 
           <div className="my-6 flex items-center gap-3">
             <div className="h-px flex-1 bg-border" />
