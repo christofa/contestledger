@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Edit, ExternalLink, Share2, Trophy } from "lucide-react";
+import { Edit, ExternalLink, LogOut, Share2, Trophy } from "lucide-react";
+import { ccc } from "@ckb-ccc/connector-react";
 import { useRouter } from "next/navigation";
 import ContestCard from "@/components/ContestCard";
 import {
@@ -27,14 +28,38 @@ const profileStats = [
 export function ProfilePageClient() {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("My Entries");
+  const [loggingOut, setLoggingOut] = useState(false);
   const { data: session, isPending } = authClient.useSession();
+  const { disconnect } = ccc.useCcc();
+  const signer = ccc.useSigner();
 
   useEffect(() => {
-    if (!isPending && !session) {
+    if (!isPending && !session && !signer) {
       router.replace("/auth");
       router.refresh();
     }
-  }, [isPending, router, session]);
+  }, [isPending, router, session, signer]);
+
+  async function handleSignOut() {
+    setLoggingOut(true);
+
+    try {
+      await authClient.signOut();
+      disconnect();
+      router.replace("/auth");
+      router.refresh();
+    } finally {
+      setLoggingOut(false);
+    }
+  }
+
+  if (isPending) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+        <div className="card p-6 text-sm text-muted">Loading profile...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
@@ -66,6 +91,15 @@ export function ProfilePageClient() {
             <button className="btn-outline gap-2 text-sm">
               <Share2 className="h-4 w-4" />
               Share
+            </button>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              disabled={loggingOut}
+              className="btn-outline gap-2 text-sm disabled:opacity-60"
+            >
+              <LogOut className="h-4 w-4" />
+              {loggingOut ? "Logging out..." : "Log out"}
             </button>
             <button className="btn-primary gap-2 text-sm">
               <Edit className="h-4 w-4" />

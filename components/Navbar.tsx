@@ -23,6 +23,7 @@ export default function Navbar() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [walletAddress, setWalletAddress] = useState("");
   const { data: session, isPending } = authClient.useSession();
+  const { disconnect } = ccc.useCcc();
   const signer = ccc.useSigner();
 
   useEffect(() => {
@@ -64,6 +65,7 @@ export default function Navbar() {
 
     try {
       await authClient.signOut();
+      disconnect();
       setProfileMenuOpen(false);
       setMobileOpen(false);
       router.replace("/auth");

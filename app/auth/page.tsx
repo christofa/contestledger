@@ -282,6 +282,9 @@ export default function AuthPage() {
               Wallet connected successfully
             </p>
           )}
+          <p className="mt-3 text-center font-body text-xs text-muted">
+            Use either wallet connection or email/password for this session, not both.
+          </p>
 
           <div className="my-6 flex items-center gap-3">
             <div className="h-px flex-1 bg-border" />
