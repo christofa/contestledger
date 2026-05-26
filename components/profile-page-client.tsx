@@ -11,7 +11,6 @@ import {
   MOCK_ENTRIES,
   MOCK_REWARDS,
 } from "@/lib/data";
-import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
 type Tab = "My Entries" | "Rewards" | "Certificates" | "My Contests";
@@ -29,22 +28,20 @@ export function ProfilePageClient() {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("My Entries");
   const [loggingOut, setLoggingOut] = useState(false);
-  const { data: session, isPending } = authClient.useSession();
   const { disconnect } = ccc.useCcc();
   const signer = ccc.useSigner();
 
   useEffect(() => {
-    if (!isPending && !session && !signer) {
+    if (!signer) {
       router.replace("/auth");
       router.refresh();
     }
-  }, [isPending, router, session, signer]);
+  }, [router, signer]);
 
   async function handleSignOut() {
     setLoggingOut(true);
 
     try {
-      await authClient.signOut();
       disconnect();
       router.replace("/auth");
       router.refresh();
@@ -53,7 +50,7 @@ export function ProfilePageClient() {
     }
   }
 
-  if (isPending) {
+  if (!signer) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
         <div className="card p-6 text-sm text-muted">Loading profile...</div>

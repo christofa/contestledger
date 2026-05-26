@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Menu, UserCircle2, X, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ccc } from "@ckb-ccc/connector-react";
-import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -22,9 +21,9 @@ export default function Navbar() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [walletAddress, setWalletAddress] = useState("");
-  const { data: session, isPending } = authClient.useSession();
   const { disconnect } = ccc.useCcc();
   const signer = ccc.useSigner();
+  const isConnected = Boolean(signer || walletAddress);
 
   useEffect(() => {
     async function loadWalletAddress() {
@@ -64,7 +63,6 @@ export default function Navbar() {
     setLoggingOut(true);
 
     try {
-      await authClient.signOut();
       disconnect();
       setProfileMenuOpen(false);
       setMobileOpen(false);
@@ -118,8 +116,7 @@ export default function Navbar() {
             <Zap className="h-4 w-4" />
             Create Contest
           </Link>
-          {!isPending &&
-            (session ? (
+          {isConnected ? (
               <div ref={menuRef} className="relative">
                 <button
                   type="button"
@@ -132,10 +129,10 @@ export default function Navbar() {
                   <div className="absolute right-0 z-50 mt-2 w-44 rounded-2xl border border-border bg-surface p-2 shadow-xl shadow-black/20">
                     <div className="border-b border-border px-3 py-2">
                       <p className="truncate font-display text-sm font-semibold text-text">
-                        {session.user.name || "Contest User"}
+                        Connected Wallet
                       </p>
                       <p className="truncate font-mono text-[11px] text-muted">
-                        {session.user.email}
+                        {walletAddress || "CKB signer active"}
                       </p>
                     </div>
                     <button
@@ -152,9 +149,9 @@ export default function Navbar() {
               </div>
             ) : (
               <Link href="/auth" className="btn-outline text-sm">
-                Sign In
+                Connect Wallet
               </Link>
-            ))}
+            )}
         </div>
 
         <button
@@ -190,8 +187,7 @@ export default function Navbar() {
           >
             Create Contest
           </Link>
-          {!isPending &&
-            (session ? (
+          {isConnected ? (
               <button
                 type="button"
                 onClick={handleSignOut}
@@ -207,9 +203,9 @@ export default function Navbar() {
                 onClick={() => setMobileOpen(false)}
                 className="btn-outline mt-2 justify-center text-sm"
               >
-                Sign In
+                Connect Wallet
               </Link>
-            ))}
+            )}
         </div>
       )}
     </header>

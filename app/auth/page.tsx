@@ -3,23 +3,8 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import {
-  Zap,
-  Eye,
-  EyeOff,
-  Lock,
-  Mail,
-  User,
-  ArrowRight,
-  Shield,
-  Trophy,
-  Wallet,
-} from "lucide-react"
+import { Shield, Trophy, Wallet, Zap } from "lucide-react"
 import { ccc } from "@ckb-ccc/connector-react"
-import { cn } from "@/lib/utils"
-import { authClient } from "@/lib/auth-client"
-
-type Mode = "login" | "signup"
 
 const trustPoints = [
   {
@@ -38,69 +23,16 @@ const trustPoints = [
 
 export default function AuthPage() {
   const router = useRouter()
-  const [mode, setMode] = useState<Mode>("login")
-  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-
-  const [email, setEmail] = useState("")
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
-  const { data: session, isPending } = authClient.useSession()
   const { open, isOpen, signerInfo, wallet } = ccc.useCcc()
   const signer = ccc.useSigner()
-
-  useEffect(() => {
-    if (!isPending && session) {
-      router.replace("/profile")
-    }
-  }, [isPending, router, session])
 
   useEffect(() => {
     if (signer) {
       router.replace("/profile")
     }
   }, [router, signer])
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
-
-    try {
-      if (mode === "login") {
-        const { error } = await authClient.signIn.email({
-          email,
-          password,
-        })
-
-        if (error) {
-          throw new Error(error.message || "Sign in failed")
-        }
-
-        router.push("/profile")
-        return
-      }
-
-      const { error } = await authClient.signUp.email({
-        email,
-        password,
-        name: username,
-      })
-
-      if (error) {
-        throw new Error(error.message || "Sign up failed")
-      }
-
-      router.push("/profile")
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Authentication failed"
-      setError(message)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   async function handleWalletConnect() {
     setLoading(true)
@@ -228,12 +160,11 @@ export default function AuthPage() {
         <div className="w-full max-w-md">
           <div className="mb-8">
             <h1 className="font-display text-3xl font-bold text-text">
-              {mode === "login" ? "Welcome back" : "Create your account"}
+              Connect your wallet
             </h1>
             <p className="mt-2 font-body text-sm text-muted">
-              {mode === "login"
-                ? "Sign in to access your profile, contests, and rewards."
-                : "Join the on-chain contest platform. No gas fees to sign up."}
+              ContestLedger uses wallet-based access only. Connect your CKB
+              wallet to enter contests, create contests, and manage rewards.
             </p>
           </div>
 
@@ -243,222 +174,37 @@ export default function AuthPage() {
             </div>
           )}
 
-          <div className="mb-8 flex items-center rounded-xl border border-border bg-surface p-1">
-            {(["login", "signup"] as Mode[]).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => {
-                  setMode(m)
-                  setError("")
-                }}
-                className={cn(
-                  "flex-1 rounded-lg py-2.5 font-display text-sm font-medium transition-all duration-200",
-                  mode === m
-                    ? "bg-primary text-white shadow-lg shadow-primary/20"
-                    : "text-muted hover:text-text"
-                )}
-              >
-                {m === "login" ? "Sign In" : "Sign Up"}
-              </button>
-            ))}
-          </div>
+          <div className="rounded-3xl border border-border bg-surface p-6">
+            <button
+              type="button"
+              onClick={handleWalletConnect}
+              disabled={loading || isOpen}
+              className="flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-background py-3 font-display text-sm font-medium text-text transition-all duration-200 hover:border-border-bright hover:bg-surface-2 disabled:opacity-50"
+            >
+              <Wallet className="h-4 w-4 text-accent" />
+              {loading || isOpen
+                ? "Opening wallet..."
+                : signer
+                  ? `Connected: ${wallet?.name ?? "CKB Wallet"}`
+                  : "Connect CKB Wallet"}
+            </button>
 
-          <button
-            type="button"
-            onClick={handleWalletConnect}
-            disabled={loading || isOpen}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-surface py-3 font-display text-sm font-medium text-text transition-all duration-200 hover:border-border-bright hover:bg-surface-2 disabled:opacity-50"
-          >
-            <Wallet className="h-4 w-4 text-accent" />
-            {loading || isOpen
-              ? "Opening wallet..."
-              : signer
-                ? `Connected: ${wallet?.name ?? "CKB Wallet"}`
-                : "Connect CKB Wallet"}
-          </button>
-          {signerInfo && (
-            <p className="mt-3 text-center font-mono text-xs text-accent">
-              Wallet connected successfully
-            </p>
-          )}
-          <p className="mt-3 text-center font-body text-xs text-muted">
-            Use either wallet connection or email/password for this session, not both.
-          </p>
-
-          <div className="my-6 flex items-center gap-3">
-            <div className="h-px flex-1 bg-border" />
-            <span className="font-mono text-xs text-muted">
-              or continue with
-            </span>
-            <div className="h-px flex-1 bg-border" />
-          </div>
-
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {mode === "signup" && (
-              <div>
-                <label className="mb-2 block font-display text-xs font-medium tracking-wider text-text-2 uppercase">
-                  Username
-                </label>
-                <div className="relative">
-                  <User className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted" />
-                  <input
-                    type="text"
-                    placeholder="@your_handle"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                    className="input pl-11"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className="mb-2 block font-display text-xs font-medium tracking-wider text-text-2 uppercase">
-                Email address
-              </label>
-              <div className="relative">
-                <Mail className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted" />
-                <input
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="input pl-11"
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <label className="block font-display text-xs font-medium tracking-wider text-text-2 uppercase">
-                  Password
-                </label>
-                {mode === "login" && (
-                  <button
-                    type="button"
-                    className="font-body text-xs text-primary hover:underline"
-                  >
-                    Forgot password?
-                  </button>
-                )}
-              </div>
-              <div className="relative">
-                <Lock className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder={
-                    mode === "signup"
-                      ? "Min. 8 characters"
-                      : "Enter your password"
-                  }
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={mode === "signup" ? 8 : undefined}
-                  className="input pr-11 pl-11"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((value) => !value)}
-                  className="absolute top-1/2 right-4 -translate-y-1/2 text-muted transition-colors hover:text-text"
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {mode === "signup" && (
-              <p className="font-body text-xs leading-relaxed text-muted">
-                By signing up, you agree to our{" "}
-                <a href="#" className="text-primary hover:underline">
-                  Terms of Service
-                </a>{" "}
-                and{" "}
-                <a href="#" className="text-primary hover:underline">
-                  Privacy Policy
-                </a>
-                .
+            {signerInfo && (
+              <p className="mt-3 text-center font-mono text-xs text-accent">
+                Wallet connected successfully
               </p>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className={cn(
-                "btn-primary mt-2 w-full justify-center py-3 text-base transition-all",
-                loading && "cursor-not-allowed opacity-70"
-              )}
-            >
-              {loading ? (
-                <>
-                  <svg
-                    className="h-4 w-4 animate-spin"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 0 1 8-8v8H4z"
-                    />
-                  </svg>
-                  {mode === "login" ? "Signing in..." : "Creating account..."}
-                </>
-              ) : (
-                <>
-                  {mode === "login" ? "Sign In" : "Create Account"}
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              )}
-            </button>
-          </form>
-
-          <p className="mt-8 text-center font-body text-sm text-muted">
-            {mode === "login" ? (
-              <>
-                Don't have an account?{" "}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode("signup")
-                    setError("")
-                  }}
-                  className="font-medium text-primary hover:underline"
-                >
-                  Sign up free
-                </button>
-              </>
-            ) : (
-              <>
-                Already have an account?{" "}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode("login")
-                    setError("")
-                  }}
-                  className="font-medium text-primary hover:underline"
-                >
-                  Sign in
-                </button>
-              </>
-            )}
-          </p>
+            <div className="mt-6 rounded-2xl border border-border bg-background/60 p-4">
+              <p className="font-display text-sm font-semibold text-text">
+                Wallet-only access
+              </p>
+              <p className="mt-1 font-body text-xs leading-relaxed text-muted">
+                We removed email and password sign up. Your connected wallet is
+                now your identity for ContestLedger.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
