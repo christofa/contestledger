@@ -1,75 +1,75 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Menu, UserCircle2, X, Zap } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { ccc } from "@ckb-ccc/connector-react";
-import { cn } from "@/lib/utils";
+import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
+import { LogOut, Menu, UserCircle2, X, Zap } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { ccc } from "@ckb-ccc/connector-react"
+import { cn } from "@/lib/utils"
 
 const navLinks = [
   { href: "/browse", label: "Browse" },
   { href: "/create", label: "Create" },
   { href: "/profile", label: "Profile" },
-];
+]
 
 export default function Navbar() {
-  const pathname = usePathname();
-  const router = useRouter();
-  const menuRef = useRef<HTMLDivElement>(null);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
-  const [walletAddress, setWalletAddress] = useState("");
-  const { disconnect } = ccc.useCcc();
-  const signer = ccc.useSigner();
-  const isConnected = Boolean(signer || walletAddress);
+  const pathname = usePathname()
+  const router = useRouter()
+  const menuRef = useRef<HTMLDivElement>(null)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
+  const [walletAddress, setWalletAddress] = useState("")
+  const { disconnect } = ccc.useCcc()
+  const signer = ccc.useSigner()
+  const isConnected = Boolean(signer || walletAddress)
 
   useEffect(() => {
     async function loadWalletAddress() {
       if (!signer) {
-        setWalletAddress("");
-        return;
+        setWalletAddress("")
+        return
       }
 
       try {
-        const address = await signer.getRecommendedAddress();
-        setWalletAddress(address);
+        const address = await signer.getRecommendedAddress()
+        setWalletAddress(address)
       } catch {
-        setWalletAddress("");
+        setWalletAddress("")
       }
     }
 
-    void loadWalletAddress();
-  }, [signer]);
+    void loadWalletAddress()
+  }, [signer])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (!menuRef.current?.contains(event.target as Node)) {
-        setProfileMenuOpen(false);
+        setProfileMenuOpen(false)
       }
     }
 
     if (profileMenuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside)
     }
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [profileMenuOpen]);
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [profileMenuOpen])
 
   async function handleSignOut() {
-    setLoggingOut(true);
+    setLoggingOut(true)
 
     try {
-      disconnect();
-      setProfileMenuOpen(false);
-      setMobileOpen(false);
-      router.replace("/auth");
-      router.refresh();
+      disconnect()
+      setProfileMenuOpen(false)
+      setMobileOpen(false)
+      router.replace("/auth")
+      router.refresh()
     } finally {
-      setLoggingOut(false);
+      setLoggingOut(false)
     }
   }
 
@@ -117,41 +117,41 @@ export default function Navbar() {
             Create Contest
           </Link>
           {isConnected ? (
-              <div ref={menuRef} className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileMenuOpen((open) => !open)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface text-text transition-colors hover:border-border-bright hover:bg-surface-2"
-                >
-                  <UserCircle2 className="h-6 w-6" />
-                </button>
-                {profileMenuOpen && (
-                  <div className="absolute right-0 z-50 mt-2 w-44 rounded-2xl border border-border bg-surface p-2 shadow-xl shadow-black/20">
-                    <div className="border-b border-border px-3 py-2">
-                      <p className="truncate font-display text-sm font-semibold text-text">
-                        Connected Wallet
-                      </p>
-                      <p className="truncate font-mono text-[11px] text-muted">
-                        {walletAddress || "CKB signer active"}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleSignOut}
-                      disabled={loggingOut}
-                      className="mt-2 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left font-display text-sm text-text transition-colors hover:bg-surface-2 disabled:opacity-60"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      {loggingOut ? "Logging out..." : "Log out"}
-                    </button>
+            <div ref={menuRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setProfileMenuOpen((open) => !open)}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface text-text transition-colors hover:border-border-bright hover:bg-surface-2"
+              >
+                <UserCircle2 className="h-6 w-6" />
+              </button>
+              {profileMenuOpen && (
+                <div className="absolute right-0 z-50 mt-2 w-44 rounded-2xl border border-border bg-surface p-2 shadow-xl shadow-black/20">
+                  <div className="border-b border-border px-3 py-2">
+                    <p className="truncate font-display text-sm font-semibold text-text">
+                      Connected Wallet
+                    </p>
+                    <p className="truncate font-mono text-[11px] text-muted">
+                      {walletAddress || "CKB signer active"}
+                    </p>
                   </div>
-                )}
-              </div>
-            ) : (
-              <Link href="/auth" className="btn-outline text-sm">
-                Connect Wallet
-              </Link>
-            )}
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    disabled={loggingOut}
+                    className="mt-2 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left font-display text-sm text-text transition-colors hover:bg-surface-2 disabled:opacity-60"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    {loggingOut ? "Logging out..." : "Log out"}
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link href="/auth" className="btn-outline text-sm">
+              Connect Wallet
+            </Link>
+          )}
         </div>
 
         <button
@@ -159,7 +159,11 @@ export default function Navbar() {
           onClick={() => setMobileOpen((open) => !open)}
           className="btn-ghost p-2 md:hidden"
         >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          {mobileOpen ? (
+            <X className="h-5 w-5" />
+          ) : (
+            <Menu className="h-5 w-5" />
+          )}
         </button>
       </div>
 
@@ -188,26 +192,26 @@ export default function Navbar() {
             Create Contest
           </Link>
           {isConnected ? (
-              <button
-                type="button"
-                onClick={handleSignOut}
-                disabled={loggingOut}
-                className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 font-display text-sm text-text transition-colors hover:bg-surface-2 disabled:opacity-60"
-              >
-                <LogOut className="h-4 w-4" />
-                {loggingOut ? "Logging out..." : "Log out"}
-              </button>
-            ) : (
-              <Link
-                href="/auth"
-                onClick={() => setMobileOpen(false)}
-                className="btn-outline mt-2 justify-center text-sm"
-              >
-                Connect Wallet
-              </Link>
-            )}
+            <button
+              type="button"
+              onClick={handleSignOut}
+              disabled={loggingOut}
+              className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 font-display text-sm text-text transition-colors hover:bg-surface-2 disabled:opacity-60"
+            >
+              <LogOut className="h-4 w-4" />
+              {loggingOut ? "Logging out..." : "Log out"}
+            </button>
+          ) : (
+            <Link
+              href="/auth"
+              onClick={() => setMobileOpen(false)}
+              className="btn-outline mt-2 justify-center text-sm"
+            >
+              Connect Wallet
+            </Link>
+          )}
         </div>
       )}
     </header>
-  );
+  )
 }
