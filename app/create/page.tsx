@@ -134,7 +134,7 @@ export default function CreateContestPage() {
       if (!res.ok) throw new Error(data.error)
 
       setStep("done")
-      router.push("/dashboard")
+      router.push("/browse")
     } catch (err: any) {
       console.error("Publish error:", err)
       setError(err.message || "Something went wrong. Please try again.")
