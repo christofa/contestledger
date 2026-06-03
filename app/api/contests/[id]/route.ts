@@ -1,11 +1,14 @@
- import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import db from "@/lib/db"
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // ✅ Await params — required in Next.js 15
+    const { id } = await params
+
     const contest = db.prepare(`
       SELECT
         id,
@@ -20,7 +23,7 @@ export async function GET(
         created_at
       FROM contests
       WHERE id = ?
-    `).get(params.id)
+    `).get(id)
 
     if (!contest) {
       return NextResponse.json(
