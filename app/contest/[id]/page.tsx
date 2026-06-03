@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useParams } from "next/navigation"
 import {
   Heart, ExternalLink, Lock, Trophy,
   Users, Zap, ChevronLeft, Loader2
@@ -48,11 +49,9 @@ function useCountdown(deadline: string) {
   return time
 }
 
-export default function ContestDetailPage({
-  params,
-}: {
-  params: { id: string }
-}) {
+export default function ContestDetailPage() {
+  const params = useParams<{ id: string }>()
+  const id = typeof params.id === "string" ? params.id : ""
   const [contest, setContest] = useState<ContestFromDB | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -61,11 +60,17 @@ export default function ContestDetailPage({
   // Fetch real contest from API
   useEffect(() => {
     const fetchContest = async () => {
+      if (!id) {
+        setError("Contest not found")
+        setLoading(false)
+        return
+      }
+
       try {
-        const res = await fetch(`/api/contests/${params.id}`)
+        const res = await fetch(`/api/contests/${id}`)
         const data = await res.json()
 
-        if (!res.ok) throw new Error(data.error)
+        if (!res.ok) throw new Error(data.error) 
 
         setContest(data.contest)
       } catch (err: any) {
@@ -76,7 +81,7 @@ export default function ContestDetailPage({
     }
 
     fetchContest()
-  }, [params.id])
+  }, [id])
 
   // Countdown uses real deadline from contest
   const timer = useCountdown(contest?.deadline ?? new Date().toISOString())

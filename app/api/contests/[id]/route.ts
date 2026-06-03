@@ -1,13 +1,19 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import db from "@/lib/db"
 
 export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  _req: Request,
+  { params }: { params: { id: string } }
 ) {
   try {
-    // ✅ Await params — required in Next.js 15
-    const { id } = await params
+    const id = params.id?.trim()
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Missing contest id" },
+        { status: 400 }
+      )
+    }
 
     const contest = db.prepare(`
       SELECT
@@ -22,8 +28,8 @@ export async function GET(
         status,
         created_at
       FROM contests
-      WHERE id = ?
-    `).get(id)
+      WHERE id = ? OR tx_hash = ?
+    `).get(id, id)
 
     if (!contest) {
       return NextResponse.json(
@@ -33,7 +39,6 @@ export async function GET(
     }
 
     return NextResponse.json({ contest })
-
   } catch (err: any) {
     console.error("Get contest error:", err.message)
     return NextResponse.json(
