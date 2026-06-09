@@ -5,7 +5,9 @@ export async function GET() {
   try {
     // Fetch all active contests from SQLite
     // ordered by most recently created first
-    const contests = db.prepare(`
+    const contests = db
+      .prepare(
+        `
       SELECT
         id,
         title,
@@ -19,10 +21,11 @@ export async function GET() {
         created_at
       FROM contests
       ORDER BY created_at DESC
-    `).all()
+    `
+      )
+      .all()
 
     return NextResponse.json({ contests })
-
   } catch (err: any) {
     console.error("List contests error:", err.message)
     return NextResponse.json(

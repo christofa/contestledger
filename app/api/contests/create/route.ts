@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
   try {
     const {
       title,
-       description,
+      description,
       entryType,
       reward,
       deadline,
@@ -47,12 +47,15 @@ export async function POST(req: NextRequest) {
     )
 
     // Get the newly created contest
-    const contest = db.prepare(`
+    const contest = db
+      .prepare(
+        `
       SELECT * FROM contests WHERE rowid = ?
-    `).get(result.lastInsertRowid)
+    `
+      )
+      .get(result.lastInsertRowid)
 
     return NextResponse.json({ success: true, contest })
-
   } catch (err: any) {
     console.error("Create contest error:", err.message)
     return NextResponse.json(

@@ -10,13 +10,12 @@ export async function GET(
     const id = rawId?.trim()
 
     if (!id) {
-      return NextResponse.json(
-        { error: "Missing contest id" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Missing contest id" }, { status: 400 })
     }
 
-    const contest = db.prepare(`
+    const contest = db
+      .prepare(
+        `
       SELECT
         id,
         title,
@@ -30,13 +29,12 @@ export async function GET(
         created_at
       FROM contests
       WHERE id = ? OR tx_hash = ?
-    `).get(id, id)
+    `
+      )
+      .get(id, id)
 
     if (!contest) {
-      return NextResponse.json(
-        { error: "Contest not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Contest not found" }, { status: 404 })
     }
 
     return NextResponse.json({ contest })
