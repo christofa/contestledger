@@ -23,4 +23,18 @@ db.exec(`
   )
 `)
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS entries (
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+    contest_id TEXT NOT NULL,
+    caption TEXT,
+    project_url TEXT,
+    creator_address TEXT NOT NULL,
+    tx_hash TEXT UNIQUE NOT NULL,
+    vote_count INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (contest_id) REFERENCES contests(id)
+  )
+`)
+
 export default db 
