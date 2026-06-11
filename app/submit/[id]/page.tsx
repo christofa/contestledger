@@ -1,135 +1,335 @@
-"use client";
+"use client"
 
-import { useState, useRef } from "react";
-import Link from "next/link";
-import { ChevronLeft, Upload, Lock, FileSignature } from "lucide-react";
-import { MOCK_CONTESTS } from "@/lib/data";
+import { useState, useEffect } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { ccc } from "@ckb-ccc/connector-react"
+import {
+  ChevronLeft,
+  Lock,
+  FileSignature,
+  Loader2,
+  Link as LinkIcon,
+  ExternalLink,
+} from "lucide-react"
 
-export default function SubmitEntryPage({ params }: { params: { id: string } }) {
-  const contest = MOCK_CONTESTS.find((c) => c.id === params.id) || MOCK_CONTESTS[1];
-  const [caption, setCaption] = useState("");
-  const [dragOver, setDragOver] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+type ContestFromDB = {
+  id: string
+  title: string
+  entry_type: string
+  reward: number
+  deadline: string
+  creator_address: string
+}
 
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault();
-    setDragOver(false);
-    const dropped = e.dataTransfer.files[0];
-    if (dropped) setFile(dropped);
+type Step = "idle" | "signing" | "broadcasting" | "saving" | "done"
+
+export default function SubmitEntryPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const router = useRouter()
+  const signer = ccc.useSigner()
+
+  const [contestId, setContestId] = useState("")
+  const [contest, setContest] = useState<ContestFromDB | null>(null)
+  const [contestLoading, setContestLoading] = useState(true)
+  const [contestError, setContestError] = useState("")
+
+  const [caption, setCaption] = useState("")
+  const [projectUrl, setProjectUrl] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [step, setStep] = useState<Step>("idle")
+
+  const stepLabel: Record<Step, string> = {
+    idle: "Submit Entry",
+    signing: "Waiting for wallet...",
+    broadcasting: "Broadcasting to CKB...",
+    saving: "Saving entry...",
+    done: "Done!",
   }
 
+  // ── Resolve params (Next.js 15) ─────────────────────────
+  useEffect(() => {
+    params.then((p) => setContestId(p.id))
+  }, [params])
+
+  // ── Fetch contest details ───────────────────────────────
+  useEffect(() => {
+    if (!contestId) return
+
+    const fetchContest = async () => {
+      try {
+        const res = await fetch(`/api/contests/${contestId}`)
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error)
+        setContest(data.contest)
+      } catch (err: any) {
+        setContestError(err.message || "Contest not found")
+      } finally {
+        setContestLoading(false)
+      }
+    }
+
+    fetchContest()
+  }, [contestId])
+
+  const isValid = caption.trim().length > 0 && projectUrl.trim().length > 0
+
+  // ── Submit handler ──────────────────────────────────────
+  const handleSubmit = async () => {
+    if (!isValid) {
+      setError("Please fill in both the caption and project link.")
+      return
+    }
+
+    if (!signer) {
+      setError("Please connect your CKB wallet first.")
+      return
+    }
+
+    if (!contest) return
+
+    setLoading(true)
+    setError("")
+
+    try {
+      setStep("signing")
+      const address = await signer.getRecommendedAddress()
+
+      // Build entry data for on-chain storage
+      const entryData = {
+        contestId,
+        caption,
+        projectUrl,
+        creator: address,
+        timestamp: new Date().toISOString(),
+        platform: "ContestLedger",
+      }
+
+      // Convert to hex
+      const entryBytes = new TextEncoder().encode(JSON.stringify(entryData))
+      const entryHex =
+        "0x" +
+        Array.from(entryBytes)
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("")
+
+      // Get creator lock script
+      const { script: creatorLock } = await ccc.Address.fromString(
+        address,
+        signer.client
+      )
+
+      // Calculate capacity with buffer
+      const minCapacity =
+        BigInt(61 + entryBytes.length + 500) * BigInt(100000000)
+
+      // Build transaction
+      const tx = ccc.Transaction.from({
+        outputs: [{ capacity: minCapacity, lock: creatorLock }],
+        outputsData: [entryHex],
+      })
+
+      await tx.completeInputsByCapacity(signer)
+      await tx.completeFeeBy(signer, 1000)
+
+      // Sign and broadcast
+      setStep("broadcasting")
+      const txHash = await signer.sendTransaction(tx)
+      console.log("Entry TX hash:", txHash)
+
+      // Save to SQLite
+      setStep("saving")
+      const res = await fetch("/api/entries/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contestId,
+          caption,
+          projectUrl,
+          txHash,
+          creatorAddress: address,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+
+      // Redirect back to contest
+      setStep("done")
+      router.push(`/contest/${contestId}`)
+    } catch (err: any) {
+      console.error("Submit error:", err)
+      setError(err.message || "Something went wrong. Please try again.")
+    } finally {
+      setLoading(false)
+      setStep("idle")
+    }
+  }
+
+  // ── Loading contest ─────────────────────────────────────
+  if (contestLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center gap-3 text-muted">
+        <Loader2 className="h-5 w-5 animate-spin" />
+        <span className="font-body">Loading contest...</span>
+      </div>
+    )
+  }
+
+  // ── Contest not found ───────────────────────────────────
+  if (contestError || !contest) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-20 text-center">
+        <p className="mb-4 font-body text-red-400">❌ {contestError}</p>
+        <Link href="/browse" className="btn-outline">
+          ← Back to contests
+        </Link>
+      </div>
+    )
+  }
+
+  const isEnded = new Date(contest.deadline) < new Date()
+  const shortAddress = signer ? "Connected ✓" : "Not connected"
+
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
+    <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
       {/* Back */}
       <Link
-        href={`/contest/${contest.id}`}
-        className="flex items-center gap-1 text-sm text-muted hover:text-text font-body mb-6 transition-colors"
+        href={`/contest/${contestId}`}
+        className="mb-6 flex items-center gap-1 font-body text-sm text-muted transition-colors hover:text-text"
       >
-        <ChevronLeft className="w-4 h-4" />
+        <ChevronLeft className="h-4 w-4" />
         Back to contest
       </Link>
 
-      <h1 className="font-display font-bold text-3xl text-text mb-1">
+      <h1 className="mb-1 font-display text-3xl font-bold text-text">
         Submit your entry
       </h1>
-      <p className="text-muted font-body mb-8">{contest.title}</p>
+      <p className="mb-8 font-body text-muted">{contest.title}</p>
 
-      <div className="card p-6 sm:p-8 flex flex-col gap-6">
-        {/* Wallet + escrow */}
-        <div className="flex items-center justify-between p-3 bg-surface-2 border border-border rounded-xl">
+      {/* Contest ended warning */}
+      {isEnded && (
+        <div className="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+          ❌ This contest has ended. Submissions are closed.
+        </div>
+      )}
+
+      <div className="card flex flex-col gap-6 p-6 sm:p-8">
+        {/* Wallet status */}
+        <div className="flex items-center justify-between rounded-xl border border-border bg-surface-2 p-3">
           <div className="flex items-center gap-2 text-sm">
-            <div className="w-2 h-2 rounded-full bg-accent" />
-            <span className="text-muted font-body">Wallet connected</span>
-            <span className="font-mono text-text">0xA2…f91</span>
+            <div
+              className={`h-2 w-2 rounded-full ${
+                signer ? "bg-accent" : "bg-red-400"
+              }`}
+            />
+            <span className="font-body text-muted">Wallet</span>
+            <span className="font-mono text-xs text-text">{shortAddress}</span>
           </div>
           <span className="ckb-lock-pill text-xs">
-            <Lock className="w-3 h-3" />
-            {contest.reward.toLocaleString()} CKB locked on-chain
+            <Lock className="h-3 w-3" />
+            {contest.reward.toLocaleString()} CKB locked
           </span>
         </div>
 
-        {/* File upload */}
+        {/* Project URL */}
         <div>
-          <label className="block text-sm font-display font-medium text-text mb-2">
-            Upload
+          <label className="mb-2 block font-display text-sm font-medium text-text">
+            Project link <span className="text-red-400">*</span>
           </label>
-          <div
-            className={`border-2 border-dashed rounded-2xl p-12 flex flex-col items-center gap-3 cursor-pointer transition-colors ${
-              dragOver
-                ? "border-primary bg-primary/5"
-                : file
-                ? "border-accent bg-accent/5"
-                : "border-border hover:border-border-bright"
-            }`}
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={handleDrop}
-            onClick={() => fileRef.current?.click()}
-          >
-            <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center">
-              <Upload className="w-6 h-6 text-white" />
-            </div>
-            {file ? (
-              <>
-                <p className="font-display font-semibold text-accent">{file.name}</p>
-                <p className="text-xs text-muted font-body">
-                  {(file.size / 1024 / 1024).toFixed(2)} MB · Click to change
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="font-display font-semibold text-text">
-                  Drag &amp; drop your file
-                </p>
-                <p className="text-xs text-muted font-body">
-                  or click to browse · max 100MB · image / video / text
-                </p>
-              </>
-            )}
+          <div className="relative">
+            <LinkIcon className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" />
+            <input
+              type="url"
+              placeholder="https://youtube.com/watch?v=... or any public link"
+              value={projectUrl}
+              onChange={(e) => setProjectUrl(e.target.value)}
+              className="input pl-9"
+              disabled={isEnded || loading}
+            />
           </div>
-          <input
-            ref={fileRef}
-            type="file"
-            className="hidden"
-            onChange={(e) => e.target.files && setFile(e.target.files[0])}
-            accept="image/*,video/*,.txt,.md"
-          />
+          <p className="mt-1.5 font-body text-xs text-muted">
+            Link to where voters can see your work — YouTube, TikTok, Instagram,
+            SoundCloud, GitHub, Google Drive, etc.
+          </p>
+
+          {/* Preview link if valid URL */}
+          {projectUrl.length > 0 && (
+            <a
+              href={projectUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center gap-1.5 font-mono text-xs text-primary hover:underline"
+            >
+              <ExternalLink className="h-3 w-3" />
+              Preview link
+            </a>
+          )}
         </div>
 
         {/* Caption */}
         <div>
-          <label className="block text-sm font-display font-medium text-text mb-2">
-            Caption
+          <label className="mb-2 block font-display text-sm font-medium text-text">
+            Caption <span className="text-red-400">*</span>
           </label>
           <textarea
-            placeholder="Tell the voters what makes your entry special..."
+            placeholder="Tell voters what makes your entry special..."
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             rows={3}
             className="textarea"
+            disabled={isEnded || loading}
           />
+          <p className="mt-1.5 font-body text-xs text-muted">
+            {caption.length}/280 characters
+          </p>
         </div>
 
-        {/* Footer actions */}
+        {/* Wallet warning */}
+        {!signer && (
+          <div className="flex items-center gap-2 rounded-xl border border-yellow-500/20 bg-yellow-500/10 p-3">
+            <span className="text-sm text-yellow-400">⚠️</span>
+            <p className="text-sm text-yellow-400">
+              Connect your CKB wallet to submit an entry
+            </p>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && (
+          <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+            ❌ {error}
+          </div>
+        )}
+
+        {/* Actions */}
         <div className="flex items-center justify-between pt-2">
-          <div className="flex items-center gap-1.5 text-xs text-muted font-body">
-            <FileSignature className="w-3.5 h-3.5" />
-            Submission requires 1 signature · No gas fee
+          <div className="flex items-center gap-1.5 font-body text-xs text-muted">
+            <FileSignature className="h-3.5 w-3.5" />
+            Requires 1 wallet signature · Stored on CKB
           </div>
           <div className="flex items-center gap-3">
             <Link
-              href={`/contest/${contest.id}`}
-              className="btn-outline text-sm px-4 py-2"
+              href={`/contest/${contestId}`}
+              className="btn-outline px-4 py-2 text-sm"
             >
               Cancel
             </Link>
-            <button className="btn-primary text-sm px-4 py-2">
-              Submit Entry
+            <button
+              onClick={handleSubmit}
+              disabled={loading || !isValid || !signer || isEnded}
+              className="btn-primary flex items-center gap-2 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {stepLabel[step]}
             </button>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }
