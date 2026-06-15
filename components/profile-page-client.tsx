@@ -155,8 +155,11 @@ export function ProfilePageClient({ viewAddress }: { viewAddress?: string }) {
                   Verified on CKB
                 </span>
               </div>
-              <p className="mt-0.5 font-mono text-xs text-muted break-all">
-                {address}
+              <p
+                className="mt-0.5 max-w-full truncate font-mono text-xs text-muted"
+                title={address}
+              >
+                {`${address.slice(0, 12)}...${address.slice(-8)}`}
               </p>
               <p className="mt-1 max-w-sm font-body text-sm text-text-2">
                 {isOwnProfile
