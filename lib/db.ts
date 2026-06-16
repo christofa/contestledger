@@ -37,4 +37,15 @@ db.exec(`
   )
 `)
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS votes (
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+    entry_id TEXT NOT NULL,
+    voter_address TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(entry_id, voter_address),
+    FOREIGN KEY (entry_id) REFERENCES entries(id)
+  )
+`)
+
 export default db 
