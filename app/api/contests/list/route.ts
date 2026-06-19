@@ -3,34 +3,12 @@ import db from "@/lib/db"
 
 export async function GET() {
   try {
-    // Fetch all active contests from SQLite
-    // ordered by most recently created first
-    const contests = db
-      .prepare(
-        `
-      SELECT
-        id,
-        title,
-        description,
-        entry_type,
-        reward,
-        deadline,
-        tx_hash,
-        creator_address,
-        status,
-        created_at
-      FROM contests
-      ORDER BY created_at DESC
-    `
-      )
-      .all()
-
-    return NextResponse.json({ contests })
+    const result = await db.execute(
+      "SELECT * FROM contests ORDER BY created_at DESC"
+    )
+    return NextResponse.json({ contests: result.rows })
   } catch (err: any) {
     console.error("List contests error:", err.message)
-    return NextResponse.json(
-      { error: err.message || "Something went wrong" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
