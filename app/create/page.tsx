@@ -230,7 +230,7 @@ export default function CreateContestPage() {
             </div>
             <div>
               <label className="mb-2 block font-display text-sm font-medium text-text">
-                Deadline
+                End date
               </label>
               <div className="relative">
                 <Clock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" />
@@ -239,8 +239,12 @@ export default function CreateContestPage() {
                   value={deadline}
                   onChange={(e) => setDeadline(e.target.value)}
                   className="input pl-9"
+                  min={new Date().toISOString().split("T")[0]}
                 />
               </div>
+              <p className="mt-1.5 text-xs text-muted font-body">
+                Pick the date the contest should end.
+              </p>
             </div>
           </div>
 
