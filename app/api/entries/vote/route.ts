@@ -6,58 +6,45 @@ export async function POST(req: NextRequest) {
     const { entryId, voterAddress } = await req.json()
 
     if (!entryId || !voterAddress) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    // Check entry exists
-    const entry = db.prepare(
-      "SELECT * FROM entries WHERE id = ?"
-    ).get(entryId)
+    const entryCheck = await db.execute({
+      sql: "SELECT * FROM entries WHERE id = ?",
+      args: [entryId],
+    })
 
-    if (!entry) {
-      return NextResponse.json(
-        { error: "Entry not found" },
-        { status: 404 }
-      )
+    if (entryCheck.rows.length === 0) {
+      return NextResponse.json({ error: "Entry not found" }, { status: 404 })
     }
 
-    // Check this address hasn't already voted for this entry
-    const existingVote = db.prepare(`
-      SELECT id FROM votes WHERE entry_id = ? AND voter_address = ?
-    `).get(entryId, voterAddress)
+    const existingVote = await db.execute({
+      sql: "SELECT id FROM votes WHERE entry_id = ? AND voter_address = ?",
+      args: [entryId, voterAddress],
+    })
 
-    if (existingVote) {
-      return NextResponse.json(
-        { error: "You already voted for this entry" },
-        { status: 400 }
-      )
+    if (existingVote.rows.length > 0) {
+      return NextResponse.json({ error: "You already voted for this entry" }, { status: 400 })
     }
 
-    // Record the vote
-    db.prepare(`
-      INSERT INTO votes (entry_id, voter_address)
-      VALUES (?, ?)
-    `).run(entryId, voterAddress)
+    await db.execute({
+      sql: "INSERT INTO votes (entry_id, voter_address) VALUES (?, ?)",
+      args: [entryId, voterAddress],
+    })
 
-    // Increment the entry's vote count
-    db.prepare(`
-      UPDATE entries SET vote_count = vote_count + 1 WHERE id = ?
-    `).run(entryId)
+    await db.execute({
+      sql: "UPDATE entries SET vote_count = vote_count + 1 WHERE id = ?",
+      args: [entryId],
+    })
 
-    const updatedEntry = db.prepare(
-      "SELECT * FROM entries WHERE id = ?"
-    ).get(entryId)
+    const updated = await db.execute({
+      sql: "SELECT * FROM entries WHERE id = ?",
+      args: [entryId],
+    })
 
-    return NextResponse.json({ success: true, entry: updatedEntry })
-
+    return NextResponse.json({ success: true, entry: updated.rows[0] })
   } catch (err: any) {
     console.error("Vote error:", err.message)
-    return NextResponse.json(
-      { error: err.message || "Something went wrong" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }

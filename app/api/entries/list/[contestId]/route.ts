@@ -8,28 +8,15 @@ export async function GET(
   try {
     const { contestId } = await params
 
-    const entries = db.prepare(`
-      SELECT
-        id,
-        contest_id,
-        caption,
-        project_url,
-        creator_address,
-        tx_hash,
-        vote_count,
-        created_at
-      FROM entries
-      WHERE contest_id = ?
-      ORDER BY vote_count DESC, created_at ASC
-    `).all(contestId)
+    const result = await db.execute({
+      sql: `SELECT * FROM entries WHERE contest_id = ?
+            ORDER BY vote_count DESC, created_at ASC`,
+      args: [contestId],
+    })
 
-    return NextResponse.json({ entries })
-
+    return NextResponse.json({ entries: result.rows })
   } catch (err: any) {
     console.error("List entries error:", err.message)
-    return NextResponse.json(
-      { error: err.message || "Something went wrong" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
