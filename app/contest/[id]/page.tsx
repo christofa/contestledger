@@ -137,7 +137,7 @@ export default function ContestDetailPage() {
     const { message } = challengeData
 
     // ── Step 2: Ask the wallet to sign the challenge ───────────────────
-    const signature = await signer.signMessage(message)
+    const signature = JSON.stringify(await signer.signMessage(message))
 
     // ── Step 3: Get the voter's address ────────────────────────────────
     const voterAddress = await signer.getRecommendedAddress()
