@@ -20,7 +20,7 @@ ContestLedger fixes this by putting the contest lifecycle on the CKB blockchain:
 - Every entry submission is a real, signed CKB transaction
 - All contest and entry data is publicly verifiable on the CKB Explorer
 - No central authority can alter a contest or entry after it's been written on-chain
-This repo contains a fully working MVP — not a static design mockup. Every "Create Contest" and "Submit Entry" action in the app produces a real transaction on CKB testnet.
+This repo contains a fully working MVP — not a static design mockup. Every "Create Contest" and "Submit Entry" action in the app produces a real transaction on the CKB testnet.
  
 ---
  
@@ -57,7 +57,7 @@ Every contest and entry links directly to its transaction on the CKB testnet exp
 | Blockchain | CKB Testnet via `@ckb-ccc/core` and `@ckb-ccc/connector-react` |
 | Wallets | JoyID, MetaMask (via CKB connector) |
 | Auth | better-auth |
-| Database | better-sqlite3 (local index pointing to on-chain data) |
+| Database | Turso (libSQL, cloud-hosted) |
 | Package manager | Bun |
  
 ---
@@ -71,13 +71,13 @@ CKB Testnet (source of truth)
    Every contest and entry is a real Cell on-chain.
    Immutable once confirmed. Verifiable by anyone.
  
-SQLite (fast index)
+Turso (libSQL, cloud-hosted)
    Stores transaction hashes, titles, and metadata
    So the app can list and search quickly without
    scanning the entire blockchain on every page load.
 ```
  
-SQLite never holds the "truth" — it's a pointer. The transaction hash stored alongside every contest and entry links straight back to the CKB Explorer, so nothing in the UI is unverifiable.
+Turso never holds the "truth" — it's a pointer. The transaction hash stored alongside every contest and entry links straight back to the CKB Explorer, so nothing in the UI is unverifiable.
  
 ---
  
@@ -141,8 +141,7 @@ contestledger/
 │   └── profile/                  # own + public profile pages
 ├── components/                   # shared UI (ContestCard, etc.)
 └── lib/
-    ├── auth.ts                   # better-auth config
-    ├── db.ts                     # SQLite schema + connection
+    ├── db.ts                     # Turso schema + connection
     └── utils.ts
 ```
  
@@ -155,7 +154,7 @@ ContestLedger's MVP intentionally scoped out a few features to ship a fully work
 - **Fiber Network voting** — votes are currently recorded off-chain via the platform database with anti-duplicate protection. The architecture is designed so that this layer can be swapped for real Fiber Network payment channels, where each vote becomes a signed off-chain micropayment that settles to CKB when a contest closes.
 - **Automated treasury payout** — winner reward distribution from the locked treasury Cell to the winning entry's creator, triggered automatically when a contest's deadline passes.
 - **Spore DOB winner certificates** — minting a permanent on-chain NFT certificate to contest winners. Demoed independently in the CCC Playground during development; not yet wired into the live app.
-- **Migration to Turso** — moving from local SQLite to a cloud-hosted SQLite-compatible database ahead of any production deployment, since Vercel's filesystem doesn't persist local SQLite files between deployments.
+- **Migration to Turso** — done. The app runs on Turso (cloud-hosted libSQL) in production, so contest, entry, and auth data persist reliably across deployments instead of relying on Vercel's ephemeral local filesystem.
 ---
  
 ## License
