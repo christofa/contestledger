@@ -39,17 +39,24 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Verify the signature cryptographically ────────────────────────────
-    try {
+   try {
       const parsedSignature = JSON.parse(signature)
-      const verified = await ccc.Signer.verifyMessage(message, parsedSignature)
+      const verified = await ccc.Signer.verifyMessage(
+        message,
+        parsedSignature
+      )
       if (!verified) {
         return NextResponse.json(
           { error: "Signature verification failed" },
           { status: 401 }
         )
       }
-    } catch {
-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
+    } catch (e) {
+      console.error("Sig verify error:", e)
+      return NextResponse.json(
+        { error: "Invalid signature" },
+        { status: 401 }
+      )
     }
 
     // ── Check entry exists ────────────────────────────────────────────────
