@@ -114,44 +114,61 @@ export default function ContestDetailPage() {
   const timer = useCountdown(contest?.deadline ?? new Date().toISOString())
 
   // ── Vote handler ─────────────────────────────────────────
-  async function handleVote(entryId: string) {
-    setVoteError("")
+ async function handleVote(entryId: string) {
+  setVoteError("")
 
-    if (!signer) {
-      setVoteError("Connect your wallet to vote")
-      return
-    }
-
-    if (votedEntries.has(entryId)) return
-
-    setVotingId(entryId)
-
-    try {
-      const voterAddress = await signer.getRecommendedAddress()
-
-      const res = await fetch("/api/entries/vote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entryId, voterAddress }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-
-      // Update local vote count immediately
-      setEntries(prev =>
-        prev
-          .map(e => e.id === entryId ? { ...e, vote_count: data.entry.vote_count } : e)
-          .sort((a, b) => b.vote_count - a.vote_count)
-      )
-      setVotedEntries(prev => new Set([...prev, entryId]))
-
-    } catch (err: any) {
-      setVoteError(err.message || "Vote failed")
-    } finally {
-      setVotingId(null)
-    }
+  if (!signer) {
+    setVoteError("Connect your wallet to vote")
+    return
   }
+
+  if (votedEntries.has(entryId)) return
+
+  setVotingId(entryId)
+
+  try {
+    // ── Step 1: Get a challenge from the backend ────────────────────────
+    const challengeRes = await fetch(
+      `/api/entries/vote/challenge?entryId=${entryId}`
+    )
+    const challengeData = await challengeRes.json()
+    if (!challengeRes.ok) throw new Error(challengeData.error)
+
+    const { message } = challengeData
+
+    // ── Step 2: Ask the wallet to sign the challenge ───────────────────
+    const signature = await signer.signMessage(message)
+
+    // ── Step 3: Get the voter's address ────────────────────────────────
+    const voterAddress = await signer.getRecommendedAddress()
+
+    // ── Step 4: Send everything to the backend ─────────────────────────
+    const res = await fetch("/api/entries/vote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entryId, voterAddress, message, signature }),
+    })
+
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error)
+
+    // ── Update local state ──────────────────────────────────────────────
+    setEntries(prev =>
+      prev
+        .map(e => e.id === entryId
+          ? { ...e, vote_count: data.entry.vote_count }
+          : e
+        )
+        .sort((a, b) => b.vote_count - a.vote_count)
+    )
+    setVotedEntries(prev => new Set([...prev, entryId]))
+
+  } catch (err: any) {
+    setVoteError(err.message || "Vote failed")
+  } finally {
+    setVotingId(null)
+  }
+}
 
   if (loading) {
     return (
