@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { ccc } from "@ckb-ccc/core"
+import { ccc } from "@ckb-ccc/connector-react"
 import db from "@/lib/db"
 
 export async function POST(req: NextRequest) {
