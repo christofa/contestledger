@@ -40,11 +40,8 @@ export async function POST(req: NextRequest) {
 
     // ── Verify the signature cryptographically ────────────────────────────
     try {
-      const verified = await ccc.verifyMessageCkbSecp256k1(
-        message,
-        signature,
-        voterAddress
-      )
+      const parsedSignature = JSON.parse(signature)
+      const verified = await ccc.Signer.verifyMessage(message, parsedSignature)
       if (!verified) {
         return NextResponse.json(
           { error: "Signature verification failed" },
@@ -52,10 +49,7 @@ export async function POST(req: NextRequest) {
         )
       }
     } catch {
-      return NextResponse.json(
-        { error: "Invalid signature" },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
     }
 
     // ── Check entry exists ────────────────────────────────────────────────
@@ -95,7 +89,6 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json({ success: true, entry: updated.rows[0] })
-
   } catch (err: any) {
     console.error("Vote error:", err.message)
     return NextResponse.json({ error: err.message }, { status: 500 })
