@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import db from "@/lib/db"
+import { verifyEntryTransaction } from "@/lib/ckb-verify"
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,6 +14,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // ── Check contest exists ──────────────────────────────────────────────────
     const contestResult = await db.execute({
       sql: "SELECT id FROM contests WHERE id = ?",
       args: [contestId],
@@ -25,17 +27,25 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // ── Verify the transaction actually exists on CKB testnet ─────────────────
+    try {
+      await verifyEntryTransaction(txHash, {
+        contestId,
+        creatorAddress,
+      })
+    } catch (verifyErr: any) {
+      console.error("Entry TX verification failed:", verifyErr.message)
+      return NextResponse.json(
+        { error: `Transaction verification failed: ${verifyErr.message}` },
+        { status: 400 }
+      )
+    }
+
+    // ── TX verified — safe to write to Turso ──────────────────────────────────
     await db.execute({
-      sql: `
-        INSERT INTO entries (
-          contest_id,
-          caption,
-          project_url,
-          creator_address,
-          tx_hash,
-          vote_count
-        ) VALUES (?, ?, ?, ?, ?, 0)
-      `,
+      sql: `INSERT INTO entries
+              (contest_id, caption, project_url, creator_address, tx_hash, vote_count)
+              VALUES (?, ?, ?, ?, ?, 0)`,
       args: [contestId, caption || "", projectUrl || "", creatorAddress, txHash],
     })
 
