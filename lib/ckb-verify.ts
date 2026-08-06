@@ -123,9 +123,10 @@ export async function verifyEntryTransaction(
 
   const cellData = parseCellData(outputsData[0])
 
-  if (cellData.contestId !== claimed.contestId) {
+ const onChainContestId = (cellData.contestId || cellData.contest_id) as string
+  if (onChainContestId !== claimed.contestId) {
     throw new Error(
-      `Contest ID mismatch: on-chain="${cellData.contestId}" claimed="${claimed.contestId}"`
+      `Contest ID mismatch: on-chain="${onChainContestId}" claimed="${claimed.contestId}"`
     )
   }
 
