@@ -132,7 +132,8 @@ export async function verifyEntryTransaction(
     )
   }
 
-  const onChainAddress = (cellData.creatorAddress ||
+  const onChainAddress = (cellData.creator ||
+    cellData.creatorAddress ||
     cellData.creator_address) as string
   if (onChainAddress !== claimed.creatorAddress) {
     throw new Error(
