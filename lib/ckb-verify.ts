@@ -89,7 +89,9 @@ export async function verifyContestTransaction(
     )
   }
 
- const onChainAddress = (cellData.creator || cellData.creatorAddress || cellData.creator_address) as string
+  const onChainAddress = (cellData.creator ||
+    cellData.creatorAddress ||
+    cellData.creator_address) as string
   if (onChainAddress !== claimed.creatorAddress) {
     throw new Error(
       `Creator address mismatch: on-chain="${onChainAddress}" claimed="${claimed.creatorAddress}"`
@@ -123,14 +125,15 @@ export async function verifyEntryTransaction(
 
   const cellData = parseCellData(outputsData[0])
 
- const onChainContestId = (cellData.contestId || cellData.contest_id) as string
+  const onChainContestId = (cellData.contestId || cellData.contest_id) as string
   if (onChainContestId !== claimed.contestId) {
     throw new Error(
       `Contest ID mismatch: on-chain="${onChainContestId}" claimed="${claimed.contestId}"`
     )
   }
 
- const onChainAddress = (cellData.creatorAddress || cellData.creator_address) as string
+  const onChainAddress = (cellData.creatorAddress ||
+    cellData.creator_address) as string
   if (onChainAddress !== claimed.creatorAddress) {
     throw new Error(
       `Creator address mismatch: on-chain="${onChainAddress}" claimed="${claimed.creatorAddress}"`
