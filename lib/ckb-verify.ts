@@ -89,7 +89,7 @@ export async function verifyContestTransaction(
     )
   }
 
- const onChainAddress = (cellData.creatorAddress || cellData.creator_address) as string
+ const onChainAddress = (cellData.creator || cellData.creatorAddress || cellData.creator_address) as string
   if (onChainAddress !== claimed.creatorAddress) {
     throw new Error(
       `Creator address mismatch: on-chain="${onChainAddress}" claimed="${claimed.creatorAddress}"`
