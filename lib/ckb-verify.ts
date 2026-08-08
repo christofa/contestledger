@@ -119,11 +119,18 @@ export async function verifyEntryTransaction(
   const tx = await fetchCkbTransaction(txHash)
 
   const outputsData: string[] = tx.outputs_data
+
+  // DEBUG — remove after fixing
+  console.log("Entry TX outputs_data:", JSON.stringify(outputsData))
+
   if (!outputsData || outputsData.length === 0) {
     throw new Error("Transaction has no Cell data")
   }
 
   const cellData = parseCellData(outputsData[0])
+
+  // DEBUG — remove after fixing
+  console.log("Entry Cell data:", JSON.stringify(cellData))
 
   const onChainContestId = (cellData.contestId || cellData.contest_id) as string
   if (onChainContestId !== claimed.contestId) {
