@@ -120,13 +120,11 @@ export async function verifyEntryTransaction(
 
   const outputsData: string[] = tx.outputs_data
 
-
   if (!outputsData || outputsData.length === 0) {
     throw new Error("Transaction has no Cell data")
   }
 
   const cellData = parseCellData(outputsData[0])
-
 
   const onChainContestId = (cellData.contestId || cellData.contest_id) as string
   if (onChainContestId !== claimed.contestId) {
