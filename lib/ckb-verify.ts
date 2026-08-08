@@ -120,8 +120,6 @@ export async function verifyEntryTransaction(
 
   const outputsData: string[] = tx.outputs_data
 
-  // DEBUG — remove after fixing
-  console.log("Entry TX outputs_data:", JSON.stringify(outputsData))
 
   if (!outputsData || outputsData.length === 0) {
     throw new Error("Transaction has no Cell data")
