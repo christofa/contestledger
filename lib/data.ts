@@ -1,34 +1,34 @@
-export type EntryType = "VIDEO" | "IMAGE" | "TEXT" | "AUDIO";
-export type ContestStatus = "Active" | "Ending Soon" | "Ended";
+export type EntryType = "VIDEO" | "IMAGE" | "TEXT" | "AUDIO"
+export type ContestStatus = "Active" | "Ending Soon" | "Ended"
 
 export interface Contest {
-  id: string;
-  title: string;
-  host: string;
-  reward: number;
-  status: ContestStatus;
-  entryType: EntryType;
-  entries: number;
-  votes: number;
-  timeLeft: string;
-  gradient: string;
+  id: string
+  title: string
+  host: string
+  reward: number
+  status: ContestStatus
+  entryType: EntryType
+  entries: number
+  votes: number
+  timeLeft: string
+  gradient: string
 }
 
 export interface Entry {
-  id: string;
-  rank: number;
-  author: string;
-  caption: string;
-  votes: number;
-  gradient: string;
-  verified?: boolean;
+  id: string
+  rank: number
+  author: string
+  caption: string
+  votes: number
+  gradient: string
+  verified?: boolean
 }
 
 export interface ProfileStats {
-  entered: number;
-  votesReceived: number;
-  rewardsEarned: number;
-  wins: number;
+  entered: number
+  votesReceived: number
+  rewardsEarned: number
+  wins: number
 }
 
 export const MOCK_CONTESTS: Contest[] = [
@@ -104,7 +104,7 @@ export const MOCK_CONTESTS: Contest[] = [
     timeLeft: "9d 23h 35m",
     gradient: "from-[#1a0d3a] to-[#0d2a3a]",
   },
-];
+]
 
 export const MOCK_ENTRIES: Entry[] = [
   {
@@ -156,7 +156,7 @@ export const MOCK_ENTRIES: Entry[] = [
     votes: 503,
     gradient: "from-[#1a2d5a] via-[#0d1060] to-[#2d0d4a]",
   },
-];
+]
 
 export const MOCK_REWARDS = [
   {
@@ -177,7 +177,7 @@ export const MOCK_REWARDS = [
     amount: 800,
     tx: "0x9f…b21",
   },
-];
+]
 
 export const MOCK_CERTIFICATES = [
   {
@@ -187,4 +187,4 @@ export const MOCK_CERTIFICATES = [
   },
   { contest: "Lo-Fi Beat Drop", date: "2025-02-22", amount: 3200 },
   { contest: "1-Line Sci-Fi Story", date: "2024-12-30", amount: 800 },
-];
+]
