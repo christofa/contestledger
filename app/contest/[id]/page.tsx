@@ -9,6 +9,7 @@ import {
   Users, Zap, ChevronLeft, Loader2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { shannonsToCkb } from "@/lib/ckb-convert"
 
 type ContestFromDB = {
   id: string
@@ -216,7 +217,7 @@ export default function ContestDetailPage() {
         </span>
         <span className="ckb-lock-pill">
           <Lock className="w-3 h-3" />
-          {contest.reward.toLocaleString()} CKB locked on-chain
+         {shannonsToCkb(contest.reward).toLocaleString()} CKB locked on-chain
         </span>
       </div>
 
@@ -444,7 +445,7 @@ export default function ContestDetailPage() {
             <div className="flex flex-col gap-2.5 text-sm font-body">
               <div className="flex justify-between items-center">
                 <span className="text-muted">⬡ Locked</span>
-                <span className="font-mono font-bold text-accent">{contest.reward.toLocaleString()} CKB</span>
+               <span className="font-mono font-bold text-accent">{shannonsToCkb(contest.reward).toLocaleString()} CKB</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted flex items-center gap-1"><Users className="w-3 h-3" /> Entries</span>
