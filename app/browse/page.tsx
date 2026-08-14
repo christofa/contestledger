@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Search, Flame, TrendingUp, Loader2 } from "lucide-react"
 import ContestCard from "@/components/ContestCard"
 import { cn } from "@/lib/utils"
+import { shannonsToCkb } from "@/lib/ckb-convert"
 
 // Real contest type from our database
 type ContestFromDB = {
@@ -79,7 +80,7 @@ export default function BrowsePage() {
       return 0
     })
 
-  const totalEscrow = contests.reduce((sum, c) => sum + c.reward, 0)
+  const totalEscrow = contests.reduce((sum, c) => sum + shannonsToCkb(c.reward), 0)
 
   // ── Trending = top 3 by reward ──────────────────────────
   const trending = [...contests]
@@ -274,7 +275,7 @@ function adaptContest(c: ContestFromDB) {
     id: c.id,
     title: c.title,
     host: `${c.creator_address.slice(0, 8)}...${c.creator_address.slice(-4)}`,
-    reward: c.reward,
+    reward: shannonsToCkb(c.reward),   // ← convert here so ContestCard gets CKB
     status: status as "Active" | "Ending Soon" | "Ended",
     entryType: c.entry_type.toUpperCase() as "VIDEO" | "IMAGE" | "TEXT" | "AUDIO",
     entries: 0,
