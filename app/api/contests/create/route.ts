@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import db from "@/lib/db"
 import { verifyContestTransaction } from "@/lib/ckb-verify"
+import { ckbToShannons } from "@/lib/ckb-convert"
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,12 +17,15 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ── Verify the transaction actually exists on CKB testnet ─────────────────
+    const rewardCkb = parseFloat(reward)
+    const rewardShannons = ckbToShannons(rewardCkb)
+
+    // ── Verify the transaction exists on CKB testnet ──────────────────────────
     try {
       await verifyContestTransaction(txHash, {
         title,
         creatorAddress,
-        reward: parseFloat(reward),
+        reward: rewardCkb,
       })
     } catch (verifyErr: any) {
       console.error("Contest TX verification failed:", verifyErr.message)
@@ -31,7 +35,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ── TX verified — safe to write to Turso ──────────────────────────────────
+    // ── TX verified — store reward in shannons ────────────────────────────────
     await db.execute({
       sql: `INSERT INTO contests
             (title, description, entry_type, reward, deadline, tx_hash, creator_address, status)
@@ -40,7 +44,7 @@ export async function POST(req: NextRequest) {
         title,
         description || "",
         entryType || "Image",
-        parseFloat(reward),
+        rewardShannons.toString(),
         deadline,
         txHash,
         creatorAddress,
