@@ -1,5 +1,5 @@
 // 1 CKB = 100,000,000 shannons
-const SHANNONS_PER_CKB = 100_000_000n
+const SHANNONS_PER_CKB = BigInt(100_000_000)
 
 /**
  * Convert CKB (number entered by user) to shannons (integer for storage)
