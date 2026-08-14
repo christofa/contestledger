@@ -12,6 +12,7 @@ import {
   Clock,
   Loader2,
 } from "lucide-react"
+import { ckbToShannons } from "@/lib/ckb-convert"
 
 type EntryType = "Image" | "Video" | "Text"
 type Step = "idle" | "signing" | "broadcasting" | "saving" | "done"
@@ -76,17 +77,17 @@ export default function CreateContestPage() {
       setStep("signing")
       const address = await signer.getRecommendedAddress()
 
-      const contestData = {
-        title,
-        description,
-        entryType,
-        reward: Number(reward),
-        deadline,
-        creator: address,
-        status: "active",
-        createdAt: new Date().toISOString(),
-        platform: "ContestLedger",
-      }
+     const contestData = {
+  title,
+  description,
+  entryType,
+  reward: Number(ckbToShannons(Number(reward))), // ← store shannons on-chain
+  deadline,
+  creator: address,
+  status: "active",
+  createdAt: new Date().toISOString(),
+  platform: "ContestLedger",
+}
 
       const contestBytes = new TextEncoder().encode(JSON.stringify(contestData))
       const contestHex =
