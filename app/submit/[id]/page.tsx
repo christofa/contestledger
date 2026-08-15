@@ -101,13 +101,13 @@ export default function SubmitEntryPage({
       setStep("signing")
       const address = await signer.getRecommendedAddress()
 
-     // Contest outpoint = contest TX hash + output index 0
+      // Contest outpoint = contest TX hash + output index 0
       const contestOutpoint = `${contest.tx_hash}:0x0`
 
       // Build entry data for on-chain storage
       const entryData = {
         contestId,
-        contestOutpoint,   // ← now verifiable from chain
+        contestOutpoint, // ← now verifiable from chain
         caption,
         projectUrl,
         creator: address,
@@ -239,7 +239,7 @@ export default function SubmitEntryPage({
           </div>
           <span className="ckb-lock-pill text-xs">
             <Lock className="h-3 w-3" />
-           {shannonsToCkb(contest.reward).toLocaleString()} CKB locked
+            {shannonsToCkb(contest.reward).toLocaleString()} CKB locked
           </span>
         </div>
 
