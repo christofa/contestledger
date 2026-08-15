@@ -4,8 +4,14 @@ import { verifyEntryTransaction } from "@/lib/ckb-verify"
 
 export async function POST(req: NextRequest) {
   try {
-    const { contestId, caption, projectUrl, txHash, creatorAddress } =
-      await req.json()
+    const {
+      contestId,
+      contestOutpoint,
+      caption,
+      projectUrl,
+      txHash,
+      creatorAddress,
+    } = await req.json()
 
     if (!contestId || !txHash || !creatorAddress) {
       return NextResponse.json(
@@ -27,7 +33,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ── Verify the transaction actually exists on CKB testnet ─────────────────
+    // ── Verify the transaction exists on CKB testnet ──────────────────────────
     try {
       await verifyEntryTransaction(txHash, {
         contestId,
@@ -41,12 +47,19 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ── TX verified — safe to write to Turso ──────────────────────────────────
+    // ── TX verified — store entry with outpoint ───────────────────────────────
     await db.execute({
       sql: `INSERT INTO entries
-              (contest_id, caption, project_url, creator_address, tx_hash, vote_count)
-              VALUES (?, ?, ?, ?, ?, 0)`,
-      args: [contestId, caption || "", projectUrl || "", creatorAddress, txHash],
+              (contest_id, contest_outpoint, caption, project_url, creator_address, tx_hash, vote_count)
+              VALUES (?, ?, ?, ?, ?, ?, 0)`,
+      args: [
+        contestId,
+        contestOutpoint || null,
+        caption || "",
+        projectUrl || "",
+        creatorAddress,
+        txHash,
+      ],
     })
 
     const entryResult = await db.execute({
