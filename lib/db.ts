@@ -31,10 +31,11 @@ async function initDb() {
     WHERE reward < 1000000000
   `)
 
-  await db.execute(`
+await db.execute(`
     CREATE TABLE IF NOT EXISTS entries (
       id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
       contest_id TEXT NOT NULL,
+      contest_outpoint TEXT,
       caption TEXT,
       project_url TEXT,
       creator_address TEXT NOT NULL,
@@ -44,6 +45,13 @@ async function initDb() {
       FOREIGN KEY (contest_id) REFERENCES contests(id)
     )
   `)
+
+  // ── Migrate existing entries — add contest_outpoint column if missing ───────
+  try {
+    await db.execute(`ALTER TABLE entries ADD COLUMN contest_outpoint TEXT`)
+  } catch {
+    // Column already exists — safe to ignore
+  }
 
   await db.execute(`
     CREATE TABLE IF NOT EXISTS votes (
