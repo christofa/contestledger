@@ -20,6 +20,7 @@ type ContestFromDB = {
   reward: number
   deadline: string
   creator_address: string
+  tx_hash: string
 }
 
 type Step = "idle" | "signing" | "broadcasting" | "saving" | "done"
@@ -99,9 +100,13 @@ export default function SubmitEntryPage({
       setStep("signing")
       const address = await signer.getRecommendedAddress()
 
+     // Contest outpoint = contest TX hash + output index 0
+      const contestOutpoint = `${contest.tx_hash}:0x0`
+
       // Build entry data for on-chain storage
       const entryData = {
         contestId,
+        contestOutpoint,   // ← now verifiable from chain
         caption,
         projectUrl,
         creator: address,
