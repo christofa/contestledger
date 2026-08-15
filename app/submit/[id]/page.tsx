@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ccc } from "@ckb-ccc/connector-react"
+import { shannonsToCkb } from "@/lib/ckb-convert"
 import {
   ChevronLeft,
   Lock,
@@ -153,6 +154,7 @@ export default function SubmitEntryPage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contestId,
+          contestOutpoint,
           caption,
           projectUrl,
           txHash,
@@ -237,7 +239,7 @@ export default function SubmitEntryPage({
           </div>
           <span className="ckb-lock-pill text-xs">
             <Lock className="h-3 w-3" />
-            {contest.reward.toLocaleString()} CKB locked
+           {shannonsToCkb(contest.reward).toLocaleString()} CKB locked
           </span>
         </div>
 
