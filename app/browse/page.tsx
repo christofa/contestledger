@@ -56,51 +56,49 @@ export default function BrowsePage() {
 
   // ── Filter and sort ─────────────────────────────────────
   const filtered = contests
-    .filter(c => {
+    .filter((c) => {
       const matchType =
         typeFilter === "All" ||
         c.entry_type.toLowerCase() === typeFilter.toLowerCase()
       const matchSearch =
-        !search ||
-        c.title.toLowerCase().includes(search.toLowerCase())
+        !search || c.title.toLowerCase().includes(search.toLowerCase())
       return matchType && matchSearch
     })
     .sort((a, b) => {
       if (sortOption === "Newest") {
-        return new Date(b.created_at).getTime() -
-               new Date(a.created_at).getTime()
+        return (
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )
       }
       if (sortOption === "Highest reward") {
         return b.reward - a.reward
       }
       if (sortOption === "Ending soon") {
-        return new Date(a.deadline).getTime() -
-               new Date(b.deadline).getTime()
+        return new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
       }
       return 0
     })
 
-  const totalEscrow = contests.reduce((sum, c) => sum + shannonsToCkb(c.reward), 0)
+  const totalEscrow = contests.reduce(
+    (sum, c) => sum + shannonsToCkb(c.reward),
+    0
+  )
 
   // ── Trending = top 3 by reward ──────────────────────────
-  const trending = [...contests]
-    .sort((a, b) => b.reward - a.reward)
-    .slice(0, 3)
+  const trending = [...contests].sort((a, b) => b.reward - a.reward).slice(0, 3)
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center
-                      justify-between gap-4 mb-8">
+      <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="font-display font-bold text-3xl sm:text-4xl text-text">
+          <h1 className="font-display text-3xl font-bold text-text sm:text-4xl">
             Browse Contests
           </h1>
-          <p className="text-muted font-body mt-1">
+          <p className="mt-1 font-body text-muted">
             {loading ? "Loading..." : `${contests.length} active challenges`}
             {" · "}
-            <span className="text-accent font-mono">
+            <span className="font-mono text-accent">
               {totalEscrow.toLocaleString()} CKB
             </span>{" "}
             in escrow
@@ -109,42 +107,37 @@ export default function BrowsePage() {
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2
-                             w-4 h-4 text-muted" />
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted" />
           <input
             type="text"
             placeholder="Search contests..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="input pl-9 w-72 text-sm"
+            onChange={(e) => setSearch(e.target.value)}
+            className="input w-72 pl-9 text-sm"
           />
         </div>
       </div>
 
       {/* Loading state */}
       {loading && (
-        <div className="flex items-center justify-center py-20 gap-3
-                        text-muted">
-          <Loader2 className="w-5 h-5 animate-spin" />
+        <div className="flex items-center justify-center gap-3 py-20 text-muted">
+          <Loader2 className="h-5 w-5 animate-spin" />
           <span className="font-body">Fetching contests from chain...</span>
         </div>
       )}
 
       {/* Error state */}
       {!loading && error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/20
-                        rounded-xl text-red-400 text-sm mb-8">
+        <div className="mb-8 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
           ❌ {error}
         </div>
       )}
 
       {/* Empty state */}
       {!loading && !error && contests.length === 0 && (
-        <div className="text-center py-20">
-          <p className="text-muted font-body text-lg mb-2">
-            No contests yet
-          </p>
-          <p className="text-muted font-body text-sm">
+        <div className="py-20 text-center">
+          <p className="mb-2 font-body text-lg text-muted">No contests yet</p>
+          <p className="font-body text-sm text-muted">
             Be the first to create one!
           </p>
         </div>
@@ -156,18 +149,17 @@ export default function BrowsePage() {
           {/* Trending section */}
           {trending.length > 0 && (
             <div className="mb-10">
-              <div className="flex items-center gap-2 mb-4">
-                <Flame className="w-5 h-5 text-warning" />
-                <h2 className="font-display font-bold text-lg text-text">
+              <div className="mb-4 flex items-center gap-2">
+                <Flame className="h-5 w-5 text-warning" />
+                <h2 className="font-display text-lg font-bold text-text">
                   Trending now
                 </h2>
-                <span className="text-xs text-muted font-body">
+                <span className="font-body text-xs text-muted">
                   — highest reward contests
                 </span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2
-                              lg:grid-cols-3 gap-5">
-                {trending.map(contest => (
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {trending.map((contest) => (
                   <ContestCard
                     key={contest.id}
                     contest={adaptContest(contest)}
@@ -179,18 +171,17 @@ export default function BrowsePage() {
           )}
 
           {/* Filters + Sort */}
-          <div className="flex flex-col sm:flex-row items-start
-                          sm:items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-2 flex-wrap">
-              {TYPE_FILTERS.map(f => (
+          <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+            <div className="flex flex-wrap items-center gap-2">
+              {TYPE_FILTERS.map((f) => (
                 <button
                   key={f}
                   onClick={() => setTypeFilter(f)}
                   className={cn(
-                    "px-4 py-1.5 rounded-full text-sm font-display font-medium border transition-colors",
+                    "rounded-full border px-4 py-1.5 font-display text-sm font-medium transition-colors",
                     typeFilter === f
-                      ? "bg-primary border-primary text-white"
-                      : "border-border text-muted hover:border-border-bright hover:text-text bg-transparent"
+                      ? "border-primary bg-primary text-white"
+                      : "border-border bg-transparent text-muted hover:border-border-bright hover:text-text"
                   )}
                 >
                   {f}
@@ -198,16 +189,16 @@ export default function BrowsePage() {
               ))}
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              {SORT_OPTIONS.map(s => (
+            <div className="flex flex-wrap items-center gap-2">
+              {SORT_OPTIONS.map((s) => (
                 <button
                   key={s}
                   onClick={() => setSortOption(s)}
                   className={cn(
-                    "px-3 py-1.5 rounded-lg text-xs font-display font-medium border transition-colors",
+                    "rounded-lg border px-3 py-1.5 font-display text-xs font-medium transition-colors",
                     sortOption === s
-                      ? "bg-surface-2 border-border-bright text-text"
-                      : "border-transparent text-muted hover:text-text bg-transparent"
+                      ? "border-border-bright bg-surface-2 text-text"
+                      : "border-transparent bg-transparent text-muted hover:text-text"
                   )}
                 >
                   {s}
@@ -217,17 +208,12 @@ export default function BrowsePage() {
           </div>
 
           {/* Contest grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2
-                          lg:grid-cols-3 gap-5">
-            {filtered.map(contest => (
-              <ContestCard
-                key={contest.id}
-                contest={adaptContest(contest)}
-              />
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.map((contest) => (
+              <ContestCard key={contest.id} contest={adaptContest(contest)} />
             ))}
             {filtered.length === 0 && (
-              <div className="col-span-3 text-center py-20
-                              text-muted font-body">
+              <div className="col-span-3 py-20 text-center font-body text-muted">
                 No contests match your filters.
               </div>
             )}
@@ -236,9 +222,8 @@ export default function BrowsePage() {
       )}
 
       {/* Footer */}
-      <div className="mt-10 flex items-center justify-center gap-2
-                      text-xs text-muted font-mono">
-        <TrendingUp className="w-3.5 h-3.5 text-accent" />
+      <div className="mt-10 flex items-center justify-center gap-2 font-mono text-xs text-muted">
+        <TrendingUp className="h-3.5 w-3.5 text-accent" />
         Live on CKB Testnet · Indexed from on-chain cells
       </div>
     </div>
@@ -261,23 +246,23 @@ function adaptContest(c: ContestFromDB) {
     diffMs <= 0
       ? "Ended"
       : diffDays > 0
-      ? `${diffDays}d ${diffHours}h left`
-      : `${diffHours}h left`
+        ? `${diffDays}d ${diffHours}h left`
+        : `${diffHours}h left`
 
   const status =
-    diffMs <= 0
-      ? "Ended"
-      : diffDays <= 2
-      ? "Ending Soon"
-      : "Active"
+    diffMs <= 0 ? "Ended" : diffDays <= 2 ? "Ending Soon" : "Active"
 
   return {
     id: c.id,
     title: c.title,
     host: `${c.creator_address.slice(0, 8)}...${c.creator_address.slice(-4)}`,
-    reward: shannonsToCkb(c.reward),   // ← convert here so ContestCard gets CKB
+    reward: shannonsToCkb(c.reward), // ← convert here so ContestCard gets CKB
     status: status as "Active" | "Ending Soon" | "Ended",
-    entryType: c.entry_type.toUpperCase() as "VIDEO" | "IMAGE" | "TEXT" | "AUDIO",
+    entryType: c.entry_type.toUpperCase() as
+      | "VIDEO"
+      | "IMAGE"
+      | "TEXT"
+      | "AUDIO",
     entries: 0,
     votes: 0,
     timeLeft,
