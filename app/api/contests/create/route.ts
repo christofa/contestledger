@@ -6,8 +6,13 @@ import { ckbToShannons } from "@/lib/ckb-convert"
 export async function POST(req: NextRequest) {
   try {
     const {
-      title, description, entryType,
-      reward, deadline, txHash, creatorAddress,
+      title,
+      description,
+      entryType,
+      reward,
+      deadline,
+      txHash,
+      creatorAddress,
     } = await req.json()
 
     if (!title || !reward || !deadline || !txHash || !creatorAddress) {
@@ -58,7 +63,6 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json({ success: true, contest: result.rows[0] })
-
   } catch (err: any) {
     console.error("Create contest error:", err.message)
     return NextResponse.json({ error: err.message }, { status: 500 })
