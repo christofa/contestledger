@@ -27,10 +27,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (contestResult.rows.length === 0) {
-      return NextResponse.json(
-        { error: "Contest not found" },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Contest not found" }, { status: 404 })
     }
 
     // ── Verify the transaction exists on CKB testnet ──────────────────────────
@@ -68,7 +65,6 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json({ success: true, entry: entryResult.rows[0] })
-
   } catch (err: any) {
     console.error("Create entry error:", err.message)
     return NextResponse.json(
