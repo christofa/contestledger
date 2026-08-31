@@ -142,3 +142,47 @@ export async function verifyEntryTransaction(
     )
   }
 }
+
+// ── Verify a vote transaction ──────────────────────────────────────────────────
+export async function verifyVoteTransaction(
+  txHash: string,
+  claimed: {
+    entryId: string
+    entryTxHash: string
+    voterAddress: string
+  }
+): Promise<void> {
+  const tx = await fetchCkbTransaction(txHash)
+
+  const outputsData: string[] = tx.outputs_data
+  if (!outputsData || outputsData.length === 0) {
+    throw new Error("Transaction has no Cell data")
+  }
+
+  const cellData = parseCellData(outputsData[0])
+
+  // Verify this is actually a vote Cell
+  if (cellData.kind !== "vote") {
+    throw new Error(
+      `Not a vote Cell: kind="${cellData.kind}"`
+    )
+  }
+
+  // Verify the entry outpoint matches
+  const expectedOutpoint = `${claimed.entryTxHash}:0x0`
+  if (cellData.entryOutpoint !== expectedOutpoint) {
+    throw new Error(
+      `Entry outpoint mismatch: on-chain="${cellData.entryOutpoint}" expected="${expectedOutpoint}"`
+    )
+  }
+
+  // Verify the voter address matches
+  const onChainVoter = (cellData.voter ||
+    cellData.voterAddress ||
+    cellData.voter_address) as string
+  if (onChainVoter !== claimed.voterAddress) {
+    throw new Error(
+      `Voter address mismatch: on-chain="${onChainVoter}" claimed="${claimed.voterAddress}"`
+    )
+  }
+}
