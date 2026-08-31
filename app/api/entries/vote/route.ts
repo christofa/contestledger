@@ -1,65 +1,47 @@
 import { NextRequest, NextResponse } from "next/server"
-import { ccc } from "@ckb-ccc/core"
 import db from "@/lib/db"
+import { verifyVoteTransaction } from "@/lib/ckb-verify"
 
 export async function POST(req: NextRequest) {
   try {
-    const { entryId, voterAddress, message, signature } = await req.json()
+    const { entryId, voterAddress, txHash } = await req.json()
 
-    // ── Validate all fields present ───────────────────────────────────────
-    if (!entryId || !voterAddress || !message || !signature) {
+    // ── Validate fields ───────────────────────────────────────────────────
+    if (!entryId || !voterAddress || !txHash) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       )
     }
 
-    // ── Verify the challenge is fresh (within 5 minutes) ──────────────────
-    const timestampMatch = message.match(/at (\d+)$/)
-    if (!timestampMatch) {
-      return NextResponse.json(
-        { error: "Invalid challenge format" },
-        { status: 400 }
-      )
-    }
-    const challengeAge = Date.now() - parseInt(timestampMatch[1])
-    if (challengeAge > 5 * 60 * 1000) {
-      return NextResponse.json(
-        { error: "Challenge expired. Please try again." },
-        { status: 400 }
-      )
-    }
-
-    // ── Verify the challenge references this entry ────────────────────────
-    if (!message.includes(`vote for entry ${entryId}`)) {
-      return NextResponse.json(
-        { error: "Challenge does not match this entry" },
-        { status: 400 }
-      )
-    }
-
-    // ── Verify the signature cryptographically ────────────────────────────
-    try {
-      const parsedSignature = JSON.parse(signature)
-      const verified = await ccc.Signer.verifyMessage(message, parsedSignature)
-      if (!verified) {
-        return NextResponse.json(
-          { error: "Signature verification failed" },
-          { status: 401 }
-        )
-      }
-    } catch (e) {
-      console.error("Sig verify error:", e)
-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
-    }
-
-    // ── Check entry exists ────────────────────────────────────────────────
+    // ── Check entry exists and get its tx_hash ────────────────────────────
     const entryCheck = await db.execute({
       sql: "SELECT * FROM entries WHERE id = ?",
       args: [entryId],
     })
     if (entryCheck.rows.length === 0) {
-      return NextResponse.json({ error: "Entry not found" }, { status: 404 })
+      return NextResponse.json(
+        { error: "Entry not found" },
+        { status: 404 }
+      )
+    }
+
+    const entry = entryCheck.rows[0]
+    const entryTxHash = entry.tx_hash as string
+
+    // ── Verify the Vote Cell on CKB testnet ───────────────────────────────
+    try {
+      await verifyVoteTransaction(txHash, {
+        entryId,
+        entryTxHash,
+        voterAddress,
+      })
+    } catch (verifyErr: any) {
+      console.error("Vote TX verification failed:", verifyErr.message)
+      return NextResponse.json(
+        { error: `Vote verification failed: ${verifyErr.message}` },
+        { status: 400 }
+      )
     }
 
     // ── Check for duplicate vote ──────────────────────────────────────────
@@ -74,10 +56,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ── Record the vote ───────────────────────────────────────────────────
+    // ── Record the vote with its CKB tx_hash ──────────────────────────────
     await db.execute({
-      sql: "INSERT INTO votes (entry_id, voter_address) VALUES (?, ?)",
-      args: [entryId, voterAddress],
+      sql: "INSERT INTO votes (entry_id, voter_address, tx_hash) VALUES (?, ?, ?)",
+      args: [entryId, voterAddress, txHash],
     })
     await db.execute({
       sql: "UPDATE entries SET vote_count = vote_count + 1 WHERE id = ?",
@@ -89,7 +71,12 @@ export async function POST(req: NextRequest) {
       args: [entryId],
     })
 
-    return NextResponse.json({ success: true, entry: updated.rows[0] })
+    return NextResponse.json({
+      success: true,
+      entry: updated.rows[0],
+      txHash,
+    })
+
   } catch (err: any) {
     console.error("Vote error:", err.message)
     return NextResponse.json({ error: err.message }, { status: 500 })
