@@ -121,59 +121,95 @@ export default function ContestDetailPage() {
   const timer = useCountdown(contest?.deadline ?? new Date().toISOString())
 
   // ── Vote handler ─────────────────────────────────────────
-  async function handleVote(entryId: string) {
-    setVoteError("")
+async function handleVote(entryId: string) {
+  setVoteError("")
 
-    if (!signer) {
-      setVoteError("Connect your wallet to vote")
-      return
-    }
-
-    if (votedEntries.has(entryId)) return
-
-    setVotingId(entryId)
-
-    try {
-      // ── Step 1: Get a challenge from the backend ────────────────────────
-      const challengeRes = await fetch(
-        `/api/entries/vote/challenge?entryId=${entryId}`
-      )
-      const challengeData = await challengeRes.json()
-      if (!challengeRes.ok) throw new Error(challengeData.error)
-
-      const { message } = challengeData
-
-      // ── Step 2: Ask the wallet to sign the challenge ───────────────────
-      const signature = JSON.stringify(await signer.signMessage(message))
-
-      // ── Step 3: Get the voter's address ────────────────────────────────
-      const voterAddress = await signer.getRecommendedAddress()
-
-      // ── Step 4: Send everything to the backend ─────────────────────────
-      const res = await fetch("/api/entries/vote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entryId, voterAddress, message, signature }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-
-      // ── Update local state ──────────────────────────────────────────────
-      setEntries((prev) =>
-        prev
-          .map((e) =>
-            e.id === entryId ? { ...e, vote_count: data.entry.vote_count } : e
-          )
-          .sort((a, b) => b.vote_count - a.vote_count)
-      )
-      setVotedEntries((prev) => new Set([...prev, entryId]))
-    } catch (err: any) {
-      setVoteError(err.message || "Vote failed")
-    } finally {
-      setVotingId(null)
-    }
+  if (!signer) {
+    setVoteError("Connect your wallet to vote")
+    return
   }
+
+  if (votedEntries.has(entryId)) return
+
+  setVotingId(entryId)
+
+  try {
+    // ── Find the entry to get its tx_hash ───────────────────────────────
+    const entry = entries.find(e => e.id === entryId)
+    if (!entry) throw new Error("Entry not found")
+
+    const voterAddress = await signer.getRecommendedAddress()
+
+    // ── Build the Vote Cell data ────────────────────────────────────────
+    const entryOutpoint = `${entry.tx_hash}:0x0`
+    const contestOutpoint = contest?.tx_hash ? `${contest.tx_hash}:0x0` : ""
+
+    const voteData = {
+      kind: "vote",
+      version: 1,
+      entryOutpoint,
+      contestOutpoint,
+      voter: voterAddress,
+      timestamp: new Date().toISOString(),
+      platform: "ContestLedger",
+    }
+
+    // ── Encode to hex ───────────────────────────────────────────────────
+    const voteBytes = new TextEncoder().encode(JSON.stringify(voteData))
+    const voteHex =
+      "0x" +
+      Array.from(voteBytes)
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("")
+
+    // ── Build the CKB transaction ───────────────────────────────────────
+    const { script: voterLock } = await ccc.Address.fromString(
+      voterAddress,
+      signer.client
+    )
+
+    const minCapacity =
+      BigInt(61 + voteBytes.length + 100) * BigInt(100_000_000)
+
+    const tx = ccc.Transaction.from({
+      outputs: [{ capacity: minCapacity, lock: voterLock }],
+      outputsData: [voteHex],
+    })
+
+    await tx.completeInputsByCapacity(signer)
+    await tx.completeFeeBy(signer, 1000)
+
+    // ── Sign and broadcast ──────────────────────────────────────────────
+    const txHash = await signer.sendTransaction(tx)
+    console.log("Vote TX hash:", txHash)
+
+    // ── Send txHash to backend for verification ─────────────────────────
+    const res = await fetch("/api/entries/vote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entryId, voterAddress, txHash }),
+    })
+
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error)
+
+    // ── Update local state ──────────────────────────────────────────────
+    setEntries(prev =>
+      prev
+        .map(e => e.id === entryId
+          ? { ...e, vote_count: data.entry.vote_count }
+          : e
+        )
+        .sort((a, b) => b.vote_count - a.vote_count)
+    )
+    setVotedEntries(prev => new Set([...prev, entryId]))
+
+  } catch (err: any) {
+    setVoteError(err.message || "Vote failed")
+  } finally {
+    setVotingId(null)
+  }
+}
 
   if (loading) {
     return (
