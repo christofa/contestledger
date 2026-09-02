@@ -163,9 +163,7 @@ export async function verifyVoteTransaction(
 
   // Verify this is actually a vote Cell
   if (cellData.kind !== "vote") {
-    throw new Error(
-      `Not a vote Cell: kind="${cellData.kind}"`
-    )
+    throw new Error(`Not a vote Cell: kind="${cellData.kind}"`)
   }
 
   // Verify the entry outpoint matches
